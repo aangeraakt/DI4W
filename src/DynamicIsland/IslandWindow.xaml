@@ -29,10 +29,11 @@
         <!-- The island itself. -->
         <Border x:Name="Pill" Background="Black" Cursor="Hand">
             <Grid x:Name="PillContent">
-                <!-- Compact: leading (left) and trailing (right) around the "camera". -->
+                <!-- Compact: leading (left) and trailing (right) around the "camera". The ends of the pill are
+                     half-circles (radius 17), so keep content a full radius-ish inset from both ends. -->
                 <Grid x:Name="CompactLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top">
-                    <ContentControl x:Name="LeadingHost" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="9,0,0,0" />
-                    <ContentControl x:Name="TrailingHost" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <ContentControl x:Name="LeadingHost" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0" />
+                    <ContentControl x:Name="TrailingHost" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0" />
                 </Grid>
                 <ContentControl x:Name="ExpandedLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                 <ContentControl x:Name="AlertLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />

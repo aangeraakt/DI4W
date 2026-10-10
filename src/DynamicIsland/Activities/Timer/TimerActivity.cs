@@ -36,7 +36,6 @@ public sealed class TimerActivity : Activity
         _tick.Tick += (_, _) => Update();
 
         Leading = Ui.Glyph(Icons.TimerGlyph, 15, Ui.Orange);
-        ((TextBlock)Leading).Margin = new Thickness(4, 0, 0, 0);
 
         _compactText = Ui.Text("0:00", 15, FontWeights.SemiBold, Ui.Orange, tabular: true);
         Trailing = _compactText;
