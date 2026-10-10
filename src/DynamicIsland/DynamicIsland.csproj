@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>false</SelfContained>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\island.ico</ApplicationIcon>
+    <AssemblyName>DynamicIsland</AssemblyName>
+    <RootNamespace>DynamicIsland</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.1.4" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\island.ico" />
+  </ItemGroup>
+
+  <!-- Claude Code hook scripts ship next to the exe so the settings app can install them. -->
+  <ItemGroup>
+    <None Include="..\..\tools\*.ps1" Link="tools\%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Publishing the island also publishes the WinUI 3 settings app into a Settings subfolder. -->
+  <Target Name="PublishSettingsApp" AfterTargets="Publish">
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\DynamicIsland.Settings\DynamicIsland.Settings.csproj&quot; -c $(Configuration) -o &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))Settings&quot;" />
+  </Target>
+
+</Project>

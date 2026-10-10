@@ -1,0 +1,48 @@
+<Page x:Class="DynamicIsland.SettingsApp.Pages.NotificationsPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:tk="using:CommunityToolkit.WinUI.Controls">
+
+    <ScrollViewer>
+        <StackPanel Style="{StaticResource PageStack}">
+            <TextBlock Text="Notifications" Style="{StaticResource PageTitle}" />
+
+            <tk:SettingsCard Header="Show notifications in the island" Description="New messages pop out of the island. Click one to jump to the app.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEA8F;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="NotificationsEnabled" Toggled="OnEnabled" />
+            </tk:SettingsCard>
+
+            <tk:SettingsCard Header="Windows notification access"
+                             Description="The island needs permission to read your notifications. Turn off an app's own banners there if you only want the island pop-up."
+                             IsClickEnabled="True" Click="OnOpenWindowsSettings">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE72E;" />
+                </tk:SettingsCard.HeaderIcon>
+                <tk:SettingsCard.ActionIcon>
+                    <FontIcon Glyph="&#xE8A7;" />
+                </tk:SettingsCard.ActionIcon>
+            </tk:SettingsCard>
+
+            <TextBlock Text="Apps" Style="{StaticResource SectionHeader}" />
+
+            <tk:SettingsExpander x:Name="AppsExpander" Header="Apps that pop out of the island"
+                                 Description="Matched on the app's name, e.g. Discord, WhatsApp or Outlook." IsExpanded="True">
+                <tk:SettingsExpander.HeaderIcon>
+                    <FontIcon Glyph="&#xE71D;" />
+                </tk:SettingsExpander.HeaderIcon>
+                <tk:SettingsExpander.ItemsHeader>
+                    <Grid Padding="58,12,16,12" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NewApp" PlaceholderText="App name" KeyDown="OnNewAppKeyDown" />
+                        <Button Grid.Column="1" Content="Add" Style="{StaticResource AccentButtonStyle}" Click="OnAdd" />
+                    </Grid>
+                </tk:SettingsExpander.ItemsHeader>
+            </tk:SettingsExpander>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

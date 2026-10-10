@@ -1,0 +1,41 @@
+<Page x:Class="DynamicIsland.SettingsApp.Pages.ClaudePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:tk="using:CommunityToolkit.WinUI.Controls">
+
+    <ScrollViewer>
+        <StackPanel Style="{StaticResource PageStack}">
+            <TextBlock Text="Claude Code" Style="{StaticResource PageTitle}" />
+
+            <tk:SettingsCard Header="Show Claude Code activity" Description="See when Claude is working, done, or needs you. The island restarts to apply this.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE943;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="ClaudeEnabled" Toggled="OnClaudeEnabled" />
+            </tk:SettingsCard>
+
+            <tk:SettingsCard x:Name="PortCard" Header="Port" Description="Local port the hooks send events to. If you change it, also set DYNAMIC_ISLAND_PORT for the hook script.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE968;" />
+                </tk:SettingsCard.HeaderIcon>
+                <NumberBox x:Name="Port" Minimum="1024" Maximum="65535" SmallChange="1"
+                           SpinButtonPlacementMode="Compact" MinWidth="140" ValueChanged="OnPort" />
+            </tk:SettingsCard>
+
+            <TextBlock Text="Hooks" Style="{StaticResource SectionHeader}" />
+
+            <tk:SettingsCard x:Name="HooksCard" Header="Claude Code hooks"
+                             Description="Adds four hooks to ~/.claude/settings.json so Claude Code tells the island what it's doing. Your other settings are kept and a backup is made. Applies to new Claude Code sessions.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE71B;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="Install" Content="Install" Style="{StaticResource AccentButtonStyle}" Click="OnInstall" />
+                    <Button x:Name="Remove" Content="Remove" Click="OnRemove" />
+                </StackPanel>
+            </tk:SettingsCard>
+
+            <InfoBar x:Name="Result" IsClosable="True" Margin="0,4,0,0" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

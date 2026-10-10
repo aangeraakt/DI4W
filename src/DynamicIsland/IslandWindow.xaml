@@ -1,0 +1,51 @@
+<Window x:Class="DynamicIsland.IslandWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dynamic Island"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="{x:Null}"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        Focusable="False"
+        SizeToContent="Manual"
+        UseLayoutRounding="True">
+
+    <!-- Fully transparent pixels of a layered window are click-through, so only the pill and bubble catch the mouse. -->
+    <Canvas x:Name="Root" Width="600" Height="260" ClipToBounds="False">
+        <Canvas.LayoutTransform>
+            <ScaleTransform x:Name="RootScale" ScaleX="1" ScaleY="1" />
+        </Canvas.LayoutTransform>
+
+        <!-- Soft shadow behind the pill so it reads on dark wallpapers too. -->
+        <Border x:Name="Shadow" Background="Black" IsHitTestVisible="False" Opacity="0.55">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="18" ShadowDepth="3" Opacity="0.45" Color="Black" />
+            </Border.Effect>
+        </Border>
+
+        <!-- The island itself. -->
+        <Border x:Name="Pill" Background="Black" Cursor="Hand">
+            <Grid x:Name="PillContent">
+                <!-- Compact: leading (left) and trailing (right) around the "camera". -->
+                <Grid x:Name="CompactLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <ContentControl x:Name="LeadingHost" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="9,0,0,0" />
+                    <ContentControl x:Name="TrailingHost" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" />
+                </Grid>
+                <ContentControl x:Name="ExpandedLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />
+                <ContentControl x:Name="AlertLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />
+            </Grid>
+        </Border>
+
+        <!-- Second activity, shown as the detached circle to the right (iOS "minimal" presentation). -->
+        <Border x:Name="Bubble" Background="Black" Cursor="Hand" Width="34" Height="34" CornerRadius="17"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <ScaleTransform x:Name="BubbleScale" ScaleX="0" ScaleY="0" />
+            </Border.RenderTransform>
+            <ContentControl x:Name="BubbleHost" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+    </Canvas>
+</Window>
