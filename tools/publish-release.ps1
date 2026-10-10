@@ -11,7 +11,9 @@ param(
     [string]$NotesFile,
     [switch]$Draft
 )
-$ErrorActionPreference = 'Stop'
+# Not 'Stop': Windows PowerShell 5.1 then treats any stderr output of git/gh/dotnet (progress, "release not found")
+# as a fatal error. Native commands are checked through $LASTEXITCODE; cmdlets that must succeed use -ErrorAction Stop.
+$ErrorActionPreference = 'Continue'
 $repo = 'aangeraakt/DI4W'
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -35,18 +37,19 @@ foreach ($project in 'src\DynamicIsland\DynamicIsland.csproj', 'src\DynamicIslan
 
 # 2. Build and package.
 $out = Join-Path $root 'artifacts\release'
-if (Test-Path $out) { Remove-Item -LiteralPath $out -Recurse -Force }
+if (Test-Path $out) { Remove-Item -LiteralPath $out -Recurse -Force -ErrorAction Stop }
 dotnet publish src/DynamicIsland -c Release -o (Join-Path $out 'DI4W')
 if ($LASTEXITCODE -ne 0) { throw "Build failed." }
-Get-ChildItem (Join-Path $out 'DI4W') -Recurse -Filter *.pdb | Remove-Item -Force
+Get-ChildItem (Join-Path $out 'DI4W') -Recurse -Filter *.pdb | Remove-Item -Force -ErrorAction Stop
 $zip = Join-Path $out "DI4W-$tag-win-x64.zip"
-Compress-Archive -Path (Join-Path $out 'DI4W') -DestinationPath $zip -CompressionLevel Optimal
+Compress-Archive -Path (Join-Path $out 'DI4W') -DestinationPath $zip -CompressionLevel Optimal -ErrorAction Stop
 Write-Host ("Package: {0} ({1:N1} MB)" -f $zip, ((Get-Item $zip).Length / 1MB))
 
 # 3. Commit the version change so the tag points at the code that was built.
 if (git status --porcelain) {
     git add src/DynamicIsland/DynamicIsland.csproj src/DynamicIsland.Settings/DynamicIsland.Settings.csproj
     git commit -m "Release $tag"
+    if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
 }
 git push origin HEAD
 if ($LASTEXITCODE -ne 0) { throw "git push failed." }
