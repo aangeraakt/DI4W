@@ -22,6 +22,7 @@ public static class Ui
     public static readonly SolidColorBrush Track = Brush("#3A3A3C");
     public static readonly SolidColorBrush ButtonBg = Brush("#2C2C2E");
     public static readonly SolidColorBrush DiscordBlurple = Brush("#5865F2");
+    public static readonly SolidColorBrush Blue = Brush("#0A84FF");
 
     public static SolidColorBrush Brush(string hex) =>
         Freeze(new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)));
@@ -181,7 +182,8 @@ public static class Icons
 
     public const string TimerGlyph = "";   // Stopwatch
     public const string ChatGlyph = "";    // Message
-    public const string BellGlyph = "";    // Ringer
+    public const string UpdateGlyph = ""; // Download
+    public const string BellGlyph ="";    // Ringer
 
     private static Geometry Parse(string data)
     {

@@ -12,6 +12,7 @@ using DynamicIsland.Core;
 using DynamicIsland.Interop;
 using DynamicIsland.Settings;
 using DynamicIsland.UI;
+using DynamicIsland.Updates;
 using H.NotifyIcon;
 
 namespace DynamicIsland;
@@ -32,6 +33,9 @@ public partial class App : Application
     private ClaudeHookServer? _hookServer;
     private FileSystemWatcher? _settingsWatcher;
     private DispatcherTimer? _reloadDebounce;
+    private EventWaitHandle? _quitSignal;
+    private DispatcherTimer? _updateTimer;
+    private Version? _announcedUpdate;
 
     public static bool Paused { get; private set; }
 
@@ -68,7 +72,12 @@ public partial class App : Application
             args.SetObserved();
         };
 
-        Log.Info("Starting Dynamic Island");
+        // The settings app sets this before installing an update, so the island exits cleanly (tray icon, port, mutex).
+        _quitSignal = new EventWaitHandle(false, EventResetMode.AutoReset, UpdateChecker.IslandQuitEvent);
+        ThreadPool.RegisterWaitForSingleObject(_quitSignal, (_, _) => Dispatcher.BeginInvoke(Shutdown),
+                                               null, Timeout.Infinite, executeOnlyOnce: true);
+
+        Log.Info($"Starting Dynamic Island {UpdateChecker.CurrentVersion}");
         _settings = AppSettings.Load();
         if (_settings.IslandPath != Environment.ProcessPath)
         {
@@ -95,9 +104,12 @@ public partial class App : Application
             ContextMenuFactory = BuildMenu,
         };
         _island.Show();
+        _island.HotkeyPressed += () => SetPaused(!Paused);
+        _island.RegisterHideHotkey(_settings.HideHotkey);
 
         CreateTray();
         WatchSettings();
+        ScheduleUpdateChecks();
 
         // Integrations
         if (_settings.ClaudeEnabled)
@@ -117,6 +129,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _settingsWatcher?.Dispose();
+        _quitSignal?.Dispose();
         _hookServer?.Dispose();
         AudioLevelMeter.Shared.Dispose();
         _tray?.Dispose();
@@ -189,14 +202,56 @@ public partial class App : Application
                            || updated.ClaudePort != _settings.ClaudePort
                            || updated.MediaEnabled != _settings.MediaEnabled;
 
+        var hotkeyChanged = updated.HideHotkey != _settings.HideHotkey;
+
         _settings.CopyFrom(updated);
         _island?.ApplyScale();
+        if (hotkeyChanged) _island?.RegisterHideHotkey(_settings.HideHotkey);
 
         if (needsRestart)
         {
             Log.Info("Restarting to apply settings");
             _restart = true;
             Shutdown();
+        }
+    }
+
+    // ───────────────────────────── updates ─────────────────────────────
+
+    /// <summary>First check shortly after startup (not to slow it down), then every few hours.</summary>
+    private void ScheduleUpdateChecks()
+    {
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _updateTimer.Tick += async (_, _) =>
+        {
+            _updateTimer.Interval = TimeSpan.FromHours(6);
+            await CheckForUpdates();
+        };
+        _updateTimer.Start();
+    }
+
+    private async Task CheckForUpdates()
+    {
+        if (!_settings.AutoCheckUpdates) return;
+        try
+        {
+            var update = await UpdateChecker.CheckAsync();
+            if (update is null || update.Version == _announcedUpdate) return; // announce each version once per run
+            _announcedUpdate = update.Version;
+            Log.Info($"Update available: {update.Version}");
+
+            _manager.ShowAlert(new IslandAlert
+            {
+                Content = Ui.AlertView(Ui.GlyphCircle(Icons.UpdateGlyph, Ui.Blue, 46, 20),
+                                       "Update available", $"Version {update.Version} is ready. Click to install."),
+                Duration = TimeSpan.FromSeconds(8),
+                StickyUntilHover = true,
+                OnClick = () => OpenSettings("--page", "About"),
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Info($"Update check failed: {ex.Message}");
         }
     }
 
@@ -241,17 +296,27 @@ public partial class App : Application
         if (_timer.IsActive) menu.Items.Add(Item("Cancel timer", _timer.Cancel));
         menu.Items.Add(new Separator());
 
-        var pause = new MenuItem { Header = "Pause island", IsCheckable = true, IsChecked = Paused };
-        pause.Click += (_, _) =>
+        var pause = new MenuItem
         {
-            Paused = pause.IsChecked;
-            if (Paused) _island?.Hide();
-            else _island?.Show();
+            Header = "Pause island",
+            IsCheckable = true,
+            IsChecked = Paused,
+            InputGestureText = Hotkey.TryParse(_settings.HideHotkey, out _, out _) ? _settings.HideHotkey : "",
         };
+        pause.Click += (_, _) => SetPaused(pause.IsChecked);
         menu.Items.Add(pause);
-        menu.Items.Add(Item("Settings…", OpenSettings));
+        menu.Items.Add(Item("Settings…", () => OpenSettings()));
+        menu.Items.Add(Item("Check for updates…", () => OpenSettings("--page", "About")));
         menu.Items.Add(new Separator());
         menu.Items.Add(Item("Quit", Shutdown));
+    }
+
+    /// <summary>Hides or shows the island. Used by the menu and the hide shortcut; the menu reads Paused when it opens.</summary>
+    private void SetPaused(bool paused)
+    {
+        Paused = paused;
+        if (paused) _island?.Hide();
+        else _island?.Show();
     }
 
     private static MenuItem Item(string header, Action onClick)
@@ -263,7 +328,8 @@ public partial class App : Application
 
     // ───────────────────────────── settings app ─────────────────────────────
 
-    private static void OpenSettings()
+    /// <param name="args">e.g. "--page", "About" to open a specific page (only when the app isn't open yet).</param>
+    private static void OpenSettings(params string[] args)
     {
         if (Process.GetProcessesByName(SettingsProcess).Length > 0)
         {
@@ -283,7 +349,9 @@ public partial class App : Application
 
         try
         {
-            Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) });
+            var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) };
+            foreach (var arg in args) psi.ArgumentList.Add(arg);
+            Process.Start(psi);
         }
         catch (Exception ex)
         {

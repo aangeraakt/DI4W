@@ -37,6 +37,22 @@
                 <ToggleSwitch x:Name="Sounds" Toggled="OnSounds" />
             </tk:SettingsCard>
 
+            <tk:SettingsCard Header="Hide island shortcut" Description="Press this anywhere to hide the island, and again to bring it back.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE765;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button x:Name="ShortcutButton" MinWidth="150" Click="OnRecordShortcut"
+                            PreviewKeyDown="OnShortcutKeyDown" LostFocus="OnShortcutLostFocus"
+                            ToolTipService.ToolTip="Click, then press the keys you want" />
+                    <Button x:Name="ClearShortcut" Content="Clear" Click="OnClearShortcut" />
+                </StackPanel>
+            </tk:SettingsCard>
+
+            <InfoBar x:Name="ShortcutWarning" Severity="Warning" IsClosable="True"
+                     Title="That shortcut is already in use"
+                     Message="Another app has claimed it, so the island won't react to it. Try a different one." />
+
             <TextBlock Text="Appearance" Style="{StaticResource SectionHeader}" />
 
             <tk:SettingsCard Header="Size" Description="How big the island is.">

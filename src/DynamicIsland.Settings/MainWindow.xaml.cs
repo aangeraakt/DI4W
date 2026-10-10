@@ -1,8 +1,10 @@
 using DynamicIsland.SettingsApp.Pages;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Windows.Foundation;
 using Windows.Graphics;
 
 namespace DynamicIsland.SettingsApp;
@@ -18,27 +20,47 @@ public sealed partial class MainWindow : Window
         ["About"] = typeof(AboutPage),
     };
 
-    public MainWindow()
+    /// <param name="startPage">Tag of the page to open first ("General", "About", …); null for General.</param>
+    public MainWindow(string? startPage = null)
     {
         InitializeComponent();
         Title = App.WindowTitle;
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
-        AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "island.ico"));
 
         var scale = GetDpiScale();
         AppWindow.Resize(new SizeInt32((int)(1000 * scale), (int)(720 * scale)));
-        if (AppWindow.Presenter is OverlappedPresenter p)
-        {
-            p.PreferredMinimumWidth = (int)(560 * scale);
-            p.PreferredMinimumHeight = (int)(480 * scale);
-        }
+        var presenter = (OverlappedPresenter)AppWindow.Presenter;
+        presenter.PreferredMinimumWidth = (int)(560 * scale);
+        presenter.PreferredMinimumHeight = (int)(480 * scale);
+        // Keep the resizable border but drop Windows' own title bar and its min/max/close buttons;
+        // the macOS-style traffic lights replace them.
+        presenter.SetBorderAndTitleBar(hasBorder: true, hasTitleBar: false);
         CenterOnScreen();
 
+        Lights.CloseRequested += Close;
+        Lights.MinimizeRequested += presenter.Minimize;
+        Lights.ZoomRequested += () =>
+        {
+            if (presenter.State == OverlappedPresenterState.Maximized) presenter.Restore();
+            else presenter.Maximize();
+        };
+        Activated += (_, e) => Lights.IsWindowActive = e.WindowActivationState != WindowActivationState.Deactivated;
+
+        // The title bar is a drag area, which would swallow clicks on the lights; carve them out.
+        AppTitleBar.SizeChanged += (_, _) => UpdateClickableRegions();
+        AppTitleBar.Loaded += (_, _) =>
+        {
+            UpdateClickableRegions();
+            AppTitleBar.XamlRoot.Changed += (_, _) => UpdateClickableRegions();
+        };
+
         Closed += (_, _) => SettingsStore.Flush();
-        Nav.SelectedItem = Nav.MenuItems[0];
+        Nav.SelectedItem = Nav.MenuItems.Concat(Nav.FooterMenuItems).OfType<NavigationViewItem>()
+                               .FirstOrDefault(i => string.Equals(i.Tag as string, startPage, StringComparison.OrdinalIgnoreCase))
+                           ?? Nav.MenuItems[0];
     }
 
     private void OnNavigationChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -47,6 +69,18 @@ public sealed partial class MainWindow : Window
         {
             ContentFrame.Navigate(page, null, new EntranceNavigationTransitionInfo());
         }
+    }
+
+    private void UpdateClickableRegions()
+    {
+        if (Lights.XamlRoot is not { } root) return;
+        var scale = root.RasterizationScale;
+        var bounds = Lights.TransformToVisual(null).TransformBounds(new Rect(0, 0, Lights.ActualWidth, Lights.ActualHeight));
+        // A few pixels of slack around the dots so near-misses still hit a button instead of dragging the window.
+        const double slack = 4;
+        var rect = new RectInt32((int)((bounds.X - slack) * scale), (int)((bounds.Y - slack) * scale),
+                                 (int)((bounds.Width + 2 * slack) * scale), (int)((bounds.Height + 2 * slack) * scale));
+        InputNonClientPointerSource.GetForWindowId(AppWindow.Id).SetRegionRects(NonClientRegionKind.Passthrough, new[] { rect });
     }
 
     private double GetDpiScale()

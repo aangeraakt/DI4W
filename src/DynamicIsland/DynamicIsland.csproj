@@ -31,13 +31,13 @@
 
   <!-- Claude Code hook scripts ship next to the exe so the settings app can install them. -->
   <ItemGroup>
-    <None Include="..\..\tools\*.ps1" Link="tools\%(Filename)%(Extension)"
+    <None Include="..\..\tools\claude-hook.ps1;..\..\tools\install-claude-hooks.ps1" Link="tools\%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Publishing the island also publishes the WinUI 3 settings app into a Settings subfolder. -->
   <Target Name="PublishSettingsApp" AfterTargets="Publish">
-    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\DynamicIsland.Settings\DynamicIsland.Settings.csproj&quot; -c $(Configuration) -o &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))Settings&quot;" />
+    <Exec Command="dotnet publish &quot;$(MSBuildThisFileDirectory)..\DynamicIsland.Settings\DynamicIsland.Settings.csproj&quot; -c $(Configuration) -p:Version=$(Version) -o &quot;$([System.IO.Path]::GetFullPath('$(PublishDir)'))Settings&quot;" />
   </Target>
 
 </Project>

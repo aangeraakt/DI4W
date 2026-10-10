@@ -31,7 +31,12 @@ public partial class App : Application
             return;
         }
 
-        _window = new MainWindow();
+        // "--page About" opens a specific page (the island uses it for "Update available").
+        var cmd = Environment.GetCommandLineArgs();
+        var pageIndex = Array.IndexOf(cmd, "--page");
+        var page = pageIndex >= 0 && pageIndex + 1 < cmd.Length ? cmd[pageIndex + 1] : null;
+
+        _window = new MainWindow(page);
         _window.Activate();
     }
 

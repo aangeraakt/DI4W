@@ -56,6 +56,11 @@ public partial class IslandWindow : Window
     /// <summary>Builds the right-click menu each time it opens.</summary>
     public Func<ContextMenu>? ContextMenuFactory { get; set; }
 
+    /// <summary>The global hide/show shortcut was pressed.</summary>
+    public event Action? HotkeyPressed;
+
+    private const int HideHotkeyId = 1;
+
     public IslandWindow(ActivityManager manager, AppSettings settings)
     {
         _manager = manager;
@@ -127,6 +132,23 @@ public partial class IslandWindow : Window
         _expanded = false;
         _panel = null;
         Refresh();
+    }
+
+    /// <summary>Registers (or replaces) the global hide/show shortcut. Empty or invalid text just removes it.</summary>
+    public void RegisterHideHotkey(string? shortcut)
+    {
+        var hwnd = new WindowInteropHelper(this).EnsureHandle();
+        Win32.UnregisterHotKey(hwnd, HideHotkeyId);
+        if (!Hotkey.TryParse(shortcut, out var modifiers, out var key)) return;
+
+        if (Win32.RegisterHotKey(hwnd, HideHotkeyId, modifiers | Win32.MOD_NOREPEAT, key))
+        {
+            Log.Info($"Hide shortcut: {shortcut}");
+        }
+        else
+        {
+            Log.Error($"Hotkey registration failed for {shortcut} (error {Marshal.GetLastWin32Error()}); another app probably uses it");
+        }
     }
 
     public void ApplyScale()
@@ -401,6 +423,10 @@ public partial class IslandWindow : Window
                 Marshal.StructureToPtr(pos, lParam, false);
                 break;
             }
+            case Win32.WM_HOTKEY when wParam.ToInt32() == HideHotkeyId:
+                HotkeyPressed?.Invoke();
+                handled = true;
+                break;
             case Win32.WM_DISPLAYCHANGE:
             case Win32.WM_SETTINGCHANGE:
                 Dispatcher.BeginInvoke(PositionOnScreen, DispatcherPriority.Background);

@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="..\DynamicIsland\Settings\AppSettings.cs" Link="Shared\AppSettings.cs" />
     <Compile Include="..\DynamicIsland\Core\Log.cs" Link="Shared\Log.cs" />
+    <Compile Include="..\DynamicIsland\Updates\UpdateChecker.cs" Link="Shared\UpdateChecker.cs" />
     <Content Include="..\DynamicIsland\Assets\island.ico" Link="Assets\island.ico" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

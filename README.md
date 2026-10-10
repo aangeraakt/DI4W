@@ -61,6 +61,7 @@ This publishes the island and the settings app (`publish\Settings\`) in one go. 
 | **Click an alert** | Opens the app it came from and closes the alert. |
 | **Right-click the island or tray icon** | Quick timers, Pause, **Settings…** and Quit. |
 | **Double-click the tray icon** | Opens the settings app. |
+| **Press Ctrl+Alt+I** | Hides the island, or brings it back. You can change the shortcut under **Settings → General**. |
 
 ## Setting up the integrations
 
@@ -111,7 +112,7 @@ You can add other apps, such as WhatsApp or Outlook, under **Notifications** in 
 
 ## Settings
 
-Open **Settings…** from the tray or right-click menu. It is a separate WinUI 3 app in the Windows 11 Settings style. Changes save immediately and the island applies them right away. Turning music or Claude Code on or off, or changing the port, restarts the island by itself.
+Open **Settings…** from the tray or right-click menu. It is a separate WinUI 3 app in the Windows 11 Settings style, with macOS-style red, yellow and green window buttons in the top-left corner. Changes save immediately and the island applies them right away. Turning music or Claude Code on or off, or changing the port, restarts the island by itself.
 
 Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also edit that file by hand; the island picks up the changes.
 
@@ -130,6 +131,25 @@ Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also ed
 | `Sounds` | `true` | Chimes for alerts and the timer alarm |
 
 Logs are written to `%AppData%\DynamicIsland\logs`.
+
+## Updates
+
+The app updates itself from this repository's [GitHub releases](https://github.com/aangeraakt/DI4W/releases).
+
+- A little after it starts, and every 6 hours after that, the island checks for a newer release. When there is one, an **Update available** alert pops out of the island. You can turn this off under **Settings → About → Check automatically**.
+- Click the alert, or go to **Settings → About → Check now**, to see what's new. **Download and install** downloads the release and checks its size and SHA-256 against what GitHub reports. It then closes both apps, replaces the files and starts the island again on the new version.
+- Your settings are kept, since they live in `%AppData%`, not in the app folder. The install log is `%AppData%\DynamicIsland\logs\update.log`.
+- Updating only works in the published app (`DynamicIsland.exe` with the settings app in `Settings\`), not when running from source.
+
+### Publishing a release
+
+```bash
+powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.0
+```
+
+This sets the version in both projects, builds and zips the app as `DI4W-v1.1.0-win-x64.zip`, commits and pushes the version change, and creates the `v1.1.0` release with the zip attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), or `-Draft` to review the release before publishing it. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
+
+The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip` asset. Drafts and pre-releases are ignored.
 
 ## Troubleshooting
 
@@ -152,11 +172,14 @@ src/DynamicIsland/
 │  ├─ Notifications/           Windows notification listener (Discord)
 │  └─ Timer/                   timer activity + picker
 ├─ Settings/                   settings.json + Start with Windows
+├─ Updates/UpdateChecker.cs    looks for newer GitHub releases (shared with the settings app)
 └─ UI/Ui.cs                    shared colors, fonts, icons and controls
-src/DynamicIsland.Settings/     WinUI 3 settings app (shares Settings/AppSettings.cs with the island)
+src/DynamicIsland.Settings/     WinUI 3 settings app (shares Settings/ and Updates/ with the island)
+└─ Updater.cs                  downloads, verifies and installs updates
 tools/
 ├─ claude-hook.ps1             called by Claude Code hooks, forwards events to the island
-└─ install-claude-hooks.ps1    adds/removes the hooks in ~/.claude/settings.json
+├─ install-claude-hooks.ps1    adds/removes the hooks in ~/.claude/settings.json
+└─ publish-release.ps1         builds the app and publishes a GitHub release for the updater
 ```
 
 ### Adding your own activity

@@ -17,6 +17,39 @@
                 </StackPanel>
             </tk:SettingsCard>
 
+            <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" />
+
+            <tk:SettingsCard x:Name="UpdateCard" Header="Check for updates" Description="Updates come from the releases on GitHub.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE895;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <ProgressRing x:Name="Checking" Width="20" Height="20" IsActive="False" />
+                    <Button x:Name="CheckButton" Content="Check now" Click="OnCheck" />
+                </StackPanel>
+            </tk:SettingsCard>
+
+            <InfoBar x:Name="UpdateBar" IsClosable="False" Severity="Informational">
+                <InfoBar.Content>
+                    <StackPanel Spacing="8" Margin="0,0,0,12">
+                        <TextBlock x:Name="ReleaseNotes" TextWrapping="Wrap" MaxHeight="160" TextTrimming="CharacterEllipsis"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <ProgressBar x:Name="DownloadProgress" Visibility="Collapsed" Maximum="1" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Name="InstallButton" Content="Download and install" Style="{StaticResource AccentButtonStyle}" Click="OnInstall" />
+                            <HyperlinkButton x:Name="NotesLink" Content="Release notes" />
+                        </StackPanel>
+                    </StackPanel>
+                </InfoBar.Content>
+            </InfoBar>
+
+            <tk:SettingsCard Header="Check automatically" Description="The island lets you know when a new version is out.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE823;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="AutoCheck" Toggled="OnAutoCheck" />
+            </tk:SettingsCard>
+
             <TextBlock Text="Files" Style="{StaticResource SectionHeader}" />
 
             <tk:SettingsCard Header="Settings file" x:Name="SettingsFileCard" IsClickEnabled="True" Click="OnOpenSettingsFile">
