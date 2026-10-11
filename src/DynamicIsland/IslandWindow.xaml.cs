@@ -59,6 +59,16 @@ public partial class IslandWindow : Window
     /// <summary>The global hide/show shortcut was pressed.</summary>
     public event Action? HotkeyPressed;
 
+    /// <summary>Every window message (msg, wParam, lParam), for add-ons that listen to broadcasts
+    /// such as device changes or clipboard updates.</summary>
+    public event Action<int, IntPtr, IntPtr>? MessageReceived;
+
+    /// <summary>Where privacy dots go: right of the pill (and the bubble, when shown).</summary>
+    public Panel IndicatorPanel => Indicators;
+
+    /// <summary>Set by the game add-on so a fullscreen game doesn't hide the island.</summary>
+    public bool KeepVisibleInFullscreen { get; set; }
+
     private const int HideHotkeyId = 1;
 
     public IslandWindow(ActivityManager manager, AppSettings settings)
@@ -126,6 +136,18 @@ public partial class IslandWindow : Window
         _panel = null;
         Refresh();
     }
+
+    /// <summary>Small status items shown in the empty pill (left: Do Not Disturb moon, right: weather).</summary>
+    public void SetIdleContent(FrameworkElement? leading, FrameworkElement? trailing)
+    {
+        if (ReferenceEquals(IdleLeadingHost.Content, leading) && ReferenceEquals(IdleTrailingHost.Content, trailing)) return;
+        IdleLeadingHost.Content = leading;
+        IdleTrailingHost.Content = trailing;
+        if (_mode == Mode.Idle) _shownKey = null; // re-run the reveal so new content fades in
+        Refresh();
+    }
+
+    private bool HasIdleContent => IdleLeadingHost.Content is not null || IdleTrailingHost.Content is not null;
 
     public void Collapse()
     {
@@ -247,10 +269,11 @@ public partial class IslandWindow : Window
             Mode.Compact => CompactLayer,
             Mode.Expanded or Mode.Panel => ExpandedLayer,
             Mode.Alert => AlertLayer,
+            Mode.Idle when HasIdleContent => IdleLayer,
             _ => null,
         };
 
-        foreach (var layer in new FrameworkElement[] { CompactLayer, ExpandedLayer, AlertLayer })
+        foreach (var layer in new FrameworkElement[] { IdleLayer, CompactLayer, ExpandedLayer, AlertLayer })
         {
             if (layer == show) continue;
             if (layer.Opacity > 0 || layer.HasAnimatedProperties) FadeOut(layer);
@@ -261,7 +284,7 @@ public partial class IslandWindow : Window
         // Content is laid out at its final size from the start; the animating pill clips it.
         show.Width = size.Width;
         show.Height = size.Height;
-        Reveal(show, mode == Mode.Compact ? 0.06 : 0.14);
+        Reveal(show, mode is Mode.Compact or Mode.Idle ? 0.06 : 0.14);
     }
 
     private static void FadeOut(FrameworkElement layer)
@@ -331,6 +354,10 @@ public partial class IslandWindow : Window
         var bs = Math.Max(0, _bubble.Value);
         BubbleScale.ScaleX = BubbleScale.ScaleY = bs;
         Bubble.Opacity = Math.Clamp(bs * 1.4, 0, 1);
+
+        // Privacy dots sit after the pill (and the bubble while it's out), level with the compact row.
+        Canvas.SetLeft(Indicators, left + w + BubbleGap + bs * (BubbleSize + BubbleGap));
+        Canvas.SetTop(Indicators, top + (CompactHeight - Indicators.ActualHeight) / 2);
     }
 
     // ───────────────────────────── input ─────────────────────────────
@@ -404,6 +431,7 @@ public partial class IslandWindow : Window
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
+        MessageReceived?.Invoke(msg, wParam, lParam);
         switch (msg)
         {
             case Win32.WM_WINDOWPOSCHANGING:
@@ -447,7 +475,9 @@ public partial class IslandWindow : Window
         if (hwnd == IntPtr.Zero) return;
 
         // Require two checks in a row so a window that covers the screen for a moment doesn't make it blink away.
-        _fullscreenTicks = _settings.HideInFullscreen && Win32.IsFullscreenAppRunning() ? _fullscreenTicks + 1 : 0;
+        _fullscreenTicks = _settings.HideInFullscreen && !KeepVisibleInFullscreen && Win32.IsFullscreenAppRunning()
+            ? _fullscreenTicks + 1
+            : 0;
         var hide = _fullscreenTicks >= 2;
         var visible = Visibility == Visibility.Visible;
         if (hide && visible) Hide();

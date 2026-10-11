@@ -25,10 +25,21 @@
                 </tk:SettingsCard.ActionIcon>
             </tk:SettingsCard>
 
-            <TextBlock Text="Apps" Style="{StaticResource SectionHeader}" />
+            <tk:SettingsCard x:Name="CallsCard" Header="Incoming calls"
+                             Description="Calls from Discord, WhatsApp, Telegram, Teams, Slack and Signal show as a call card. Answer switches to the app; Decline dismisses it.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE717;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="Calls" Toggled="OnCalls" />
+            </tk:SettingsCard>
 
-            <tk:SettingsExpander x:Name="AppsExpander" Header="Apps that pop out of the island"
-                                 Description="Matched on the app's name, e.g. Discord, WhatsApp or Outlook." IsExpanded="True">
+            <TextBlock Text="Chat apps" Style="{StaticResource SectionHeader}" />
+            <StackPanel x:Name="ChatAppsPanel" Spacing="4" />
+
+            <TextBlock Text="Other apps" Style="{StaticResource SectionHeader}" />
+
+            <tk:SettingsExpander x:Name="AppsExpander" Header="More apps that pop out of the island"
+                                 Description="Matched on the name Windows shows for the app's notifications, e.g. Spotify or Steam." IsExpanded="True">
                 <tk:SettingsExpander.HeaderIcon>
                     <FontIcon Glyph="&#xE71D;" />
                 </tk:SettingsExpander.HeaderIcon>

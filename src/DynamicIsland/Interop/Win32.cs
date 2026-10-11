@@ -180,6 +180,9 @@ internal static class Win32
     /// <summary>Bounds of the primary monitor in physical pixels. Always current, unlike WPF's SystemParameters.</summary>
     public static RECT PrimaryMonitorRect() => GetMonitorRect(MonitorFromPoint(new POINT(), MONITOR_DEFAULTTOPRIMARY));
 
+    [DllImport("user32.dll")]
+    public static extern short GetKeyState(int vk);
+
     // ───────────────────────────── global hotkey ─────────────────────────────
 
     public const int WM_HOTKEY = 0x0312;

@@ -163,6 +163,7 @@ public sealed class TimerActivity : Activity
             Content = Ui.AlertView(icon, "Timer", $"{label} is done", Ui.Orange, stop),
             Size = new Size(380, 76),
             Sticky = true,
+            BreaksThroughQuiet = true,
             OnDismissed = StopAlarm,
         };
         _manager.ShowAlert(alert);

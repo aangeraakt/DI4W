@@ -47,6 +47,9 @@ public sealed class AppSettings
     /// <summary>Look for new releases on GitHub now and then and announce them in the island.</summary>
     public bool AutoCheckUpdates { get; set; } = true;
 
+    /// <summary>On/off switches and options for the add-ons (volume, battery, calendar, weather…).</summary>
+    public AddonSettings Addons { get; set; } = new();
+
     /// <summary>Written by the island on startup so the settings app can find it (Start with Windows).</summary>
     public string? IslandPath { get; set; }
 
@@ -113,6 +116,84 @@ public sealed class AppSettings
             if (p.CanWrite) p.SetValue(this, p.GetValue(other));
         }
     }
+}
+
+/// <summary>
+/// Add-on switches. Everything that shows up uninvited (system pop-ups) defaults to on; things that need
+/// setup (calendar feeds, weather location) or cost resources (game overlay) say so in the settings app.
+/// </summary>
+public sealed class AddonSettings
+{
+    // System
+    public bool Volume { get; set; } = true;
+    public bool Brightness { get; set; } = true;
+    public bool Battery { get; set; } = true;
+    public int BatteryLowPercent { get; set; } = 20;
+    public int BatteryCriticalPercent { get; set; } = 10;
+    public bool Bluetooth { get; set; } = true;
+    public bool UsbDrives { get; set; } = true;
+    public bool Network { get; set; } = true;
+    public bool PrivacyIndicators { get; set; } = true;
+    public bool LockKeys { get; set; } = true;
+    public bool PerformanceWarnings { get; set; } = true;
+
+    // Productivity
+    public bool Calendar { get; set; } = true;
+
+    /// <summary>iCalendar (.ics) links, e.g. Outlook's or Google's "secret address" for a calendar.</summary>
+    public List<string> CalendarFeeds { get; set; } = new();
+    public int CalendarReminderMinutes { get; set; } = 5;
+
+    public int FocusMinutes { get; set; } = 25;
+    public int BreakMinutes { get; set; } = 5;
+    public int LongBreakMinutes { get; set; } = 15;
+    public int SessionsBeforeLongBreak { get; set; } = 4;
+
+    public bool Clipboard { get; set; } = true;
+    public bool Screenshots { get; set; } = true;
+    public bool Downloads { get; set; } = true;
+    public bool FileCopy { get; set; } = true;
+
+    // Apps and alerts
+    public bool Calls { get; set; } = true;
+    public bool DoNotDisturb { get; set; } = true;
+    public bool WindowsUpdate { get; set; } = true;
+
+    // Info
+    public bool Weather { get; set; } = true;
+
+    /// <summary>City name for the weather. Empty: use Windows location if allowed.</summary>
+    public string WeatherLocation { get; set; } = "";
+    public bool WeatherFahrenheit { get; set; } = false;
+    public bool RainAlerts { get; set; } = true;
+
+    /// <summary>Keep the island visible over fullscreen games and show GPU/CPU load. Off by default.</summary>
+    public bool GameMode { get; set; } = false;
+}
+
+/// <summary>
+/// Chat apps with built-in support: matched on the name Windows shows for their notifications, with a brand
+/// color for the fallback icon and the process names used to bring the app forward when an alert is clicked.
+/// </summary>
+public static class ChatApps
+{
+    public sealed record ChatApp(string Name, string Color, string[] Processes, bool HasCalls);
+
+    public static readonly ChatApp[] All =
+    {
+        new("Discord", "#5865F2", new[] { "Discord", "DiscordPTB", "DiscordCanary" }, true),
+        new("WhatsApp", "#25D366", new[] { "WhatsApp", "WhatsApp.Root" }, true),
+        new("Telegram", "#2AABEE", new[] { "Telegram" }, true),
+        new("Microsoft Teams", "#5B5FC7", new[] { "ms-teams", "Teams" }, true),
+        new("Slack", "#4A154B", new[] { "slack" }, true),
+        new("Signal", "#3A76F0", new[] { "Signal" }, true),
+        new("Outlook", "#0F6CBD", new[] { "olk", "OUTLOOK" }, false),
+        new("Mail", "#0F6CBD", new[] { "HxOutlook" }, false),
+    };
+
+    /// <summary>The preset whose name appears in a notification's app name ("Telegram Desktop" -> Telegram).</summary>
+    public static ChatApp? Find(string appDisplayName) =>
+        All.FirstOrDefault(a => appDisplayName.Contains(a.Name, StringComparison.OrdinalIgnoreCase));
 }
 
 /// <summary>Converts between "Ctrl+Alt+I" and the modifier flags / virtual-key code RegisterHotKey takes.</summary>

@@ -23,6 +23,10 @@ public static class Ui
     public static readonly SolidColorBrush ButtonBg = Brush("#2C2C2E");
     public static readonly SolidColorBrush DiscordBlurple = Brush("#5865F2");
     public static readonly SolidColorBrush Blue = Brush("#0A84FF");
+    public static readonly SolidColorBrush Red = Brush("#FF453A");
+    public static readonly SolidColorBrush Purple = Brush("#BF5AF2");
+    public static readonly SolidColorBrush Teal = Brush("#64D2FF");
+    public static readonly SolidColorBrush Indigo = Brush("#5E5CE6");
 
     public static SolidColorBrush Brush(string hex) =>
         Freeze(new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)));
@@ -207,6 +211,67 @@ public static class Icons
         HorizontalAlignment = HorizontalAlignment.Center,
         VerticalAlignment = VerticalAlignment.Center,
     };
+
+    /// <summary>iOS-style battery: outline, fill for the charge level, a nub, and a bolt while charging.</summary>
+    public static FrameworkElement Battery(double fraction, bool charging, Brush fill, double width = 27)
+    {
+        var height = width * 0.48;
+        var body = new Border
+        {
+            Width = width, Height = height,
+            CornerRadius = new CornerRadius(height * 0.3),
+            BorderBrush = Ui.Grey, BorderThickness = new Thickness(1.2),
+            Padding = new Thickness(1.6),
+            Child = new Border
+            {
+                Width = Math.Max(2, (width - 6.4) * Math.Clamp(fraction, 0, 1)),
+                HorizontalAlignment = HorizontalAlignment.Left,
+                CornerRadius = new CornerRadius(height * 0.18),
+                Background = fill,
+            },
+        };
+        var nub = new Border
+        {
+            Width = 2, Height = height * 0.36, Margin = new Thickness(1, 0, 0, 0),
+            CornerRadius = new CornerRadius(0, 1, 1, 0), Background = Ui.Grey, VerticalAlignment = VerticalAlignment.Center,
+        };
+        var grid = new Grid { VerticalAlignment = VerticalAlignment.Center };
+        grid.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { body, nub } });
+        if (charging)
+        {
+            grid.Children.Add(new Path
+            {
+                Data = Bolt, Fill = Ui.White, Stroke = Brushes.Black, StrokeThickness = 0.8,
+                Stretch = Stretch.Uniform, Height = height * 0.95, Margin = new Thickness(0, 0, 3, 0),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            });
+        }
+        return grid;
+    }
+
+    private static readonly Geometry Bolt = Parse("M 6,0 L 0,8 H 4 L 2,14 L 9,5 H 5 Z");
+
+    /// <summary>Circular progress arc starting at 12 o'clock, clockwise; <paramref name="progress"/> is the filled part 0..1.</summary>
+    public static Path Ring(double progress, double size, double stroke, Brush brush)
+    {
+        var r = (size - stroke) / 2;
+        var p = Math.Clamp(progress, 0.0001, 0.9999);
+        var angle = p * 2 * Math.PI;
+        var start = new Point(size / 2, stroke / 2);
+        var end = new Point(size / 2 + r * Math.Sin(angle), size / 2 - r * Math.Cos(angle));
+        var figure = new PathFigure { StartPoint = start, IsClosed = false };
+        figure.Segments.Add(new ArcSegment(end, new Size(r, r), 0, angle > Math.PI, SweepDirection.Clockwise, true));
+        return new Path
+        {
+            Data = new PathGeometry(new[] { figure }),
+            Stroke = brush,
+            StrokeThickness = stroke,
+            StrokeStartLineCap = PenLineCap.Round,
+            StrokeEndLineCap = PenLineCap.Round,
+            Width = size,
+            Height = size,
+        };
+    }
 
     /// <summary>The Claude "spark": tapered rays of varying length around a centre.</summary>
     public static Geometry ClaudeSpark { get; } = BuildSpark();

@@ -8,6 +8,7 @@ public sealed class ActivityManager
     private readonly Queue<IslandAlert> _alerts = new();
     private readonly DispatcherTimer _alertTimer;
     private TimeSpan _alertRemaining;
+    private readonly System.Diagnostics.Stopwatch _alertClock = new();
     private Activity? _pinned;
 
     public event Action? Changed;
@@ -22,10 +23,14 @@ public sealed class ActivityManager
         _alertTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _alertTimer.Tick += (_, _) =>
         {
+            // Count real time: timer ticks can arrive late while the UI thread is busy, and counting
+            // ticks would then stretch a 4 s alert to 10 s or more.
+            var elapsed = _alertClock.Elapsed;
+            _alertClock.Restart();
             var a = CurrentAlert;
             if (a is null) { _alertTimer.Stop(); return; }
             if (a.Sticky || a.StickyUntilHover || HoldAlert) return;
-            _alertRemaining -= _alertTimer.Interval;
+            _alertRemaining -= elapsed;
             if (_alertRemaining <= TimeSpan.Zero) DismissAlert();
         };
     }
@@ -53,10 +58,33 @@ public sealed class ActivityManager
         Changed?.Invoke();
     }
 
+    /// <summary>Do Not Disturb: only alerts with <see cref="IslandAlert.BreaksThroughQuiet"/> are shown.</summary>
+    public bool Quiet { get; set; }
+
     public void ShowAlert(IslandAlert alert)
     {
+        if (Quiet && !alert.BreaksThroughQuiet) return;
+
+        // Showing the alert that's already up (a HUD whose view was updated) just restarts its timer.
+        if (alert == CurrentAlert)
+        {
+            _alertRemaining = alert.Duration;
+            Changed?.Invoke();
+            return;
+        }
+        if (_alerts.Contains(alert)) return;
+
         if (CurrentAlert is null)
         {
+            Present(alert);
+        }
+        else if (alert.Urgent)
+        {
+            // Put the interrupted alert back at the front, unless it was a HUD itself (those are momentary).
+            var waiting = _alerts.ToList();
+            _alerts.Clear();
+            if (!CurrentAlert.Urgent) _alerts.Enqueue(CurrentAlert);
+            foreach (var a in waiting) _alerts.Enqueue(a);
             Present(alert);
         }
         else
@@ -96,6 +124,7 @@ public sealed class ActivityManager
     {
         CurrentAlert = alert;
         _alertRemaining = alert.Duration;
+        _alertClock.Restart();
         _alertTimer.Start();
         Changed?.Invoke();
     }

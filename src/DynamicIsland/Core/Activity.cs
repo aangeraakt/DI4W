@@ -54,6 +54,12 @@ public sealed class IslandAlert
     /// <summary>Stays until the mouse has hovered it once, then times out normally.</summary>
     public bool StickyUntilHover { get; set; }
 
+    /// <summary>Shown right away, putting any current alert back in line (volume/brightness bars).</summary>
+    public bool Urgent { get; init; }
+
+    /// <summary>Still shown while Do Not Disturb is on (alarms, timers, calls).</summary>
+    public bool BreaksThroughQuiet { get; init; }
+
     public Action? OnClick { get; init; }
     public Action? OnDismissed { get; init; }
 }

@@ -35,6 +35,11 @@
                     <ContentControl x:Name="LeadingHost" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0" />
                     <ContentControl x:Name="TrailingHost" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0" />
                 </Grid>
+                <!-- Idle: small status items (Do Not Disturb moon, weather) in the otherwise empty pill. -->
+                <Grid x:Name="IdleLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top">
+                    <ContentControl x:Name="IdleLeadingHost" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="16,0,0,0" />
+                    <ContentControl x:Name="IdleTrailingHost" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0" />
+                </Grid>
                 <ContentControl x:Name="ExpandedLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />
                 <ContentControl x:Name="AlertLayer" Opacity="0" HorizontalAlignment="Center" VerticalAlignment="Top" />
             </Grid>
@@ -48,5 +53,8 @@
             </Border.RenderTransform>
             <ContentControl x:Name="BubbleHost" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
+
+        <!-- Privacy dots (mic / camera in use), right of the pill like the iPhone's status dots. -->
+        <StackPanel x:Name="Indicators" Orientation="Horizontal" Background="Transparent" />
     </Canvas>
 </Window>

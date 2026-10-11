@@ -5,9 +5,12 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DynamicIsland.Activities.Claude;
+using DynamicIsland.Activities.Focus;
+using DynamicIsland.Activities.Stopwatches;
 using DynamicIsland.Activities.Media;
 using DynamicIsland.Activities.Notifications;
 using DynamicIsland.Activities.Timer;
+using DynamicIsland.Addons;
 using DynamicIsland.Core;
 using DynamicIsland.Interop;
 using DynamicIsland.Settings;
@@ -29,8 +32,11 @@ public partial class App : Application
     private AppSettings _settings = new();
     private ActivityManager _manager = null!;
     private TimerActivity _timer = null!;
+    private FocusActivity _focus = null!;
+    private StopwatchActivity _stopwatch = null!;
     private NotificationService _notifications = null!;
     private ClaudeHookServer? _hookServer;
+    private AddonHost? _addons;
     private FileSystemWatcher? _settingsWatcher;
     private DispatcherTimer? _reloadDebounce;
     private EventWaitHandle? _quitSignal;
@@ -90,6 +96,12 @@ public partial class App : Application
         _timer = new TimerActivity(_manager, _settings);
         _manager.Register(_timer);
 
+        _focus = new FocusActivity(_manager, _settings);
+        _manager.Register(_focus);
+
+        _stopwatch = new StopwatchActivity();
+        _manager.Register(_stopwatch);
+
         var claude = new ClaudeActivity(_manager, _settings);
         _manager.Register(claude);
 
@@ -100,12 +112,15 @@ public partial class App : Application
         // Window
         _island = new IslandWindow(_manager, _settings)
         {
-            IdlePanelFactory = () => (TimerPicker.Build(StartTimer), TimerPicker.PanelSize),
+            IdlePanelFactory = () => (BuildPicker(), TimerPicker.PanelSize),
             ContextMenuFactory = BuildMenu,
         };
         _island.Show();
         _island.HotkeyPressed += () => SetPaused(!Paused);
         _island.RegisterHideHotkey(_settings.HideHotkey);
+
+        _addons = new AddonHost(new AddonContext(_settings, _manager, _island, Dispatcher));
+        _addons.Sync();
 
         CreateTray();
         WatchSettings();
@@ -120,7 +135,7 @@ public partial class App : Application
         }
 
         _notifications = new NotificationService(_settings, Dispatcher);
-        _notifications.Received += ShowNotification;
+        _notifications.Received += new NotificationPresenter(_manager, _settings).Show;
 
         if (_settings.MediaEnabled) await mediaService.StartAsync();
         await _notifications.StartAsync();
@@ -131,6 +146,7 @@ public partial class App : Application
         _settingsWatcher?.Dispose();
         _quitSignal?.Dispose();
         _hookServer?.Dispose();
+        _addons?.Shutdown();
         AudioLevelMeter.Shared.Dispose();
         _tray?.Dispose();
         if (_ownsMutex) _singleInstance?.ReleaseMutex();
@@ -148,21 +164,19 @@ public partial class App : Application
         _island?.ClosePanel();
     }
 
-    private void ShowNotification(IncomingNotification n)
+    private void StartFocus()
     {
-        FrameworkElement icon = n.Logo is not null
-            ? Ui.Image(n.Logo, 46, 12)
-            : Ui.GlyphCircle(Icons.ChatGlyph, Ui.DiscordBlurple, 46, 20);
-
-        var process = n.App.Replace(" ", "");
-        _manager.ShowAlert(new IslandAlert
-        {
-            Content = Ui.AlertView(icon, n.Title, n.Body),
-            Size = new Size(400, string.IsNullOrEmpty(n.Body) || n.Body.Length < 40 ? 76 : 88),
-            Duration = TimeSpan.FromSeconds(5),
-            OnClick = () => Win32.FocusProcess(process),
-        });
+        _focus.Start();
+        _island?.ClosePanel();
     }
+
+    private void StartStopwatch()
+    {
+        _stopwatch.Start();
+        _island?.ClosePanel();
+    }
+
+    private FrameworkElement BuildPicker() => TimerPicker.Build(StartTimer, StartFocus, StartStopwatch, _settings.Addons);
 
     // ───────────────────────────── live settings ─────────────────────────────
 
@@ -207,6 +221,7 @@ public partial class App : Application
         _settings.CopyFrom(updated);
         _island?.ApplyScale();
         if (hotkeyChanged) _island?.RegisterHideHotkey(_settings.HideHotkey);
+        _addons?.Sync();
 
         if (needsRestart)
         {
@@ -290,10 +305,12 @@ public partial class App : Application
         timer.Items.Add(new Separator());
         timer.Items.Add(Item("Custom…", () =>
         {
-            _island?.OpenPanel(TimerPicker.Build(StartTimer), TimerPicker.PanelSize);
+            _island?.OpenPanel(BuildPicker(), TimerPicker.PanelSize);
         }));
         menu.Items.Add(timer);
         if (_timer.IsActive) menu.Items.Add(Item("Cancel timer", _timer.Cancel));
+        menu.Items.Add(_focus.IsActive ? Item("Stop focus session", _focus.Stop) : Item("Start focus session", StartFocus));
+        menu.Items.Add(_stopwatch.IsActive ? Item("Stop stopwatch", _stopwatch.Stop) : Item("Start stopwatch", StartStopwatch));
         menu.Items.Add(new Separator());
 
         var pause = new MenuItem

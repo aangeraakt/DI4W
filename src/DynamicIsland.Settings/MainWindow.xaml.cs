@@ -17,6 +17,7 @@ public sealed partial class MainWindow : Window
         ["Media"] = typeof(MediaPage),
         ["Claude"] = typeof(ClaudePage),
         ["Notifications"] = typeof(NotificationsPage),
+        ["Addons"] = typeof(AddonsPage),
         ["About"] = typeof(AboutPage),
     };
 

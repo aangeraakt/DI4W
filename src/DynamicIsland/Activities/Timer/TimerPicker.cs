@@ -3,36 +3,127 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using DynamicIsland.Settings;
 using DynamicIsland.UI;
 
 namespace DynamicIsland.Activities.Timer;
 
 /// <summary>
-/// The panel that opens when you click the idle island: preset chips plus a custom
-/// minutes:seconds picker you change with the scroll wheel or the +/- buttons.
-/// No text box, because the island never takes keyboard focus.
+/// The panel that opens when you click the idle island, with three modes:
+/// Timer (preset chips plus a minutes:seconds picker you change with the scroll wheel or +/-),
+/// Focus (Pomodoro) and Stopwatch. No text boxes, because the island never takes keyboard focus.
 /// </summary>
 public static class TimerPicker
 {
     public static readonly Size PanelSize = new(420, 170);
     private static readonly int[] PresetMinutes = { 1, 3, 5, 10, 15, 25 };
 
-    public static FrameworkElement Build(Action<TimeSpan> start)
+    public static FrameworkElement Build(Action<TimeSpan> startTimer, Action startFocus, Action startStopwatch, AddonSettings options)
+    {
+        var root = new Grid { Margin = new Thickness(20, 14, 20, 16) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        var modes = new (string Name, string Glyph, Brush Color, Func<FrameworkElement> View)[]
+        {
+            ("Timer", Icons.TimerGlyph, Ui.Orange, () => BuildTimer(startTimer)),
+            ("Focus", "", Ui.Red, () => BuildFocus(startFocus, options)),
+            ("Stopwatch", "", Ui.Amber, () => BuildStopwatch(startStopwatch)),
+        };
+
+        // Header: icon + title on the left, mode switch on the right.
+        var header = new Grid();
+        var icon = Ui.Glyph(modes[0].Glyph, 15, modes[0].Color);
+        var title = Ui.Text(modes[0].Name, 15, FontWeights.SemiBold, Ui.White);
+        title.Margin = new Thickness(8, 0, 0, 0);
+        header.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { icon, title } });
+
+        var content = new ContentControl { Content = modes[0].View() };
+        Grid.SetRow(content, 1);
+
+        var switcher = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var tabs = new List<Button>();
+        foreach (var mode in modes)
+        {
+            var label = Ui.Text(mode.Name, 12, FontWeights.SemiBold, Ui.Grey);
+            Button? tab = null;
+            tab = Ui.Button(label, () =>
+            {
+                icon.Text = mode.Glyph;
+                icon.Foreground = mode.Color;
+                title.Text = mode.Name;
+                content.Content = mode.View();
+                foreach (var t in tabs) Select(t, t == tab);
+            }, Brushes.Transparent, double.NaN, 24);
+            tab.Padding = new Thickness(10, 0, 10, 0);
+            tab.Margin = new Thickness(4, 0, 0, 0);
+            tabs.Add(tab);
+            switcher.Children.Add(tab);
+        }
+        Select(tabs[0], true);
+        header.Children.Add(switcher);
+
+        root.Children.Add(header);
+        root.Children.Add(content);
+        return root;
+
+        static void Select(Button tab, bool selected)
+        {
+            tab.Background = selected ? Ui.Track : Brushes.Transparent;
+            ((TextBlock)tab.Content).Foreground = selected ? Ui.White : Ui.Grey;
+        }
+    }
+
+    private static FrameworkElement BuildFocus(Action start, AddonSettings o)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 14, 0, 0) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(Ui.Text($"{o.FocusMinutes} min focus", 30, FontWeights.Light, Ui.White));
+        var detail = Ui.Text($"then a {o.BreakMinutes} min break · every {Ordinal(o.SessionsBeforeLongBreak)} break is {o.LongBreakMinutes} min",
+                             13, FontWeights.Normal, Ui.Grey);
+        detail.TextWrapping = TextWrapping.Wrap;
+        text.Children.Add(detail);
+        grid.Children.Add(text);
+
+        var button = Ui.CircleButton(Ui.Text("Start", 14, FontWeights.SemiBold, Brushes.Black), Ui.Red, 56, start);
+        button.VerticalAlignment = VerticalAlignment.Center;
+        button.Margin = new Thickness(12, 0, 0, 0);
+        Grid.SetColumn(button, 1);
+        grid.Children.Add(button);
+        return grid;
+    }
+
+    private static string Ordinal(int n) => n % 100 is 11 or 12 or 13 ? $"{n}th" : (n % 10) switch { 1 => $"{n}st", 2 => $"{n}nd", 3 => $"{n}rd", _ => $"{n}th" };
+
+    private static FrameworkElement BuildStopwatch(Action start)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 14, 0, 0) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(Ui.Text("0:00.0", 34, FontWeights.Light, Ui.Amber, tabular: true));
+        text.Children.Add(Ui.Text("Counts up until you stop it", 13, FontWeights.Normal, Ui.Grey));
+        grid.Children.Add(text);
+
+        var button = Ui.CircleButton(Ui.Text("Start", 14, FontWeights.SemiBold, Brushes.Black), Ui.Amber, 56, start);
+        button.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(button, 1);
+        grid.Children.Add(button);
+        return grid;
+    }
+
+    private static FrameworkElement BuildTimer(Action<TimeSpan> start)
     {
         var minutes = 5;
         var seconds = 0;
 
-        var root = new Grid { Margin = new Thickness(20, 16, 20, 16) };
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-        var header = new StackPanel { Orientation = Orientation.Horizontal };
-        header.Children.Add(Ui.Glyph(Icons.TimerGlyph, 15, Ui.Orange));
-        var title = Ui.Text("Timer", 15, FontWeights.SemiBold, Ui.White);
-        title.Margin = new Thickness(8, 0, 0, 0);
-        header.Children.Add(title);
-        root.Children.Add(header);
 
         // Preset chips.
         var presets = new UniformGrid { Columns = PresetMinutes.Length, Margin = new Thickness(-3, 12, -3, 0) };
@@ -43,7 +134,7 @@ public static class TimerPicker
             chip.Margin = new Thickness(3, 0, 3, 0);
             presets.Children.Add(chip);
         }
-        Grid.SetRow(presets, 1);
+        Grid.SetRow(presets, 0);
         root.Children.Add(presets);
 
         // Custom row: [-] mm : ss [+]            [Start]
@@ -114,7 +205,7 @@ public static class TimerPicker
         Grid.SetColumn(startButton, 2);
         custom.Children.Add(startButton);
 
-        Grid.SetRow(custom, 2);
+        Grid.SetRow(custom, 1);
         root.Children.Add(custom);
 
         Render();

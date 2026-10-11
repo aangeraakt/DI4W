@@ -17,13 +17,39 @@ A small black pill sits at the top-center of your screen. It changes shape to sh
 | 🎵 **Spotify** | Album art and live audio bars, tinted to match the album art | Art, title and artist, a seekable progress bar, ⏮ ⏯ ⏭ |
 | ✳️ **Claude Code** | Spinning Claude logo and elapsed time while Claude works | Every running session with its project and time |
 | ⏱️ **Timer** | Orange timer icon and countdown | Pause/resume, cancel and a large countdown |
-| 💬 **Discord** | A new message pops out of the island | Click to jump to Discord |
+| 🍅 **Focus timer** | Red progress ring and countdown; work and break periods run back to back | Pause, skip to the next period, stop |
+| ⏲️ **Stopwatch** | Counts up | Pause/resume, stop, tenths of a second |
+| 💬 **Chat apps** | Discord, WhatsApp, Telegram, Teams, Slack, Signal and Outlook messages pop out; calls show as a call card | Click to jump to the app |
+
+### Add-ons
+
+Each one has its own switch under **Settings → Add-ons** (calls and chat apps under **Notifications**).
+
+| | What it shows |
+|---|---|
+| 🔊 **Volume** / ☀️ **Brightness** | An iOS-style bar when you change them (brightness: built-in laptop screens) |
+| 🔋 **Battery** | Charger plugged in or unplugged, and warnings at 20% and 10% (adjustable) |
+| 🎧 **Bluetooth** | "AirPods · Connected · 80% battery" when a paired device connects or disconnects |
+| 💾 **USB drives** | A drive plugged in or removed, with its name and size; click to open it |
+| 📶 **Wi-Fi and internet** | No internet, back online, or which network you joined |
+| 🟠 **Microphone and camera** | An orange or green dot next to the island while an app uses them |
+| ⇪ **Caps Lock / Num Lock** | "Caps Lock on" / "off" |
+| 🔥 **Heavy load** | CPU or memory nearly full for a while, or an NVIDIA GPU running hot, with the process using the most |
+| 📅 **Calendar** | "Meeting in 5 min" with a **Join** button for Teams, Zoom, Google Meet and Webex. Add your calendar's .ics link in the settings |
+| 📋 **Clipboard** | A short preview of what you copied (never passwords from password managers) |
+| 📸 **Screenshots** | A thumbnail of a new screenshot; click to open it |
+| ⬇️ **Downloads** | Size and speed in the pill while a browser downloads; "Download complete" after |
+| 📁 **File copies** | Progress of File Explorer copies and moves |
+| 🌙 **Do Not Disturb** | Follows Windows' Do Not Disturb: only alarms and timers pop up, and a moon shows in the island |
+| 🔄 **Windows Update** | "Restart to finish installing", with a one-minute restart you can still cancel |
+| ⛅ **Weather** | The temperature in the empty island and "Rain in about 15 min". Set your city in the settings |
+| 🎮 **Game mode** | Off by default. Keeps the island over fullscreen games with GPU load and temperature (no frame rate: Windows only shares it with programs running as administrator) |
 
 It also includes:
 
 - **iOS-style animation.** The pill springs between sizes with a small bounce, and content fades in with a blur.
 - **Two at once.** When two things are active, the second shows as a small circle next to the pill, as on the iPhone. Click it to swap them.
-- **Alerts.** "Claude is done", "Claude needs you", "Timer done" and Discord messages pop open and close again by themselves. They stay open while your mouse is over them.
+- **Alerts.** "Claude is done", "Claude needs you", "Timer done", messages and add-on pop-ups open and close again by themselves. They stay open while your mouse is over them.
 - **Stays out of the way.** It never takes keyboard focus, you can click through everything around the pill, and it hides while a fullscreen game or video is playing.
 - **Lightweight.** Native C# and WPF, with a separate WinUI 3 settings app. Spotify works without a Spotify account or API key.
 
@@ -170,7 +196,9 @@ src/DynamicIsland/
 │  ├─ Media/                   Windows media session + loopback audio bars
 │  ├─ Claude/                  local hook server + Claude activity/alerts
 │  ├─ Notifications/           Windows notification listener (Discord)
-│  └─ Timer/                   timer activity + picker
+│  ├─ Focus/ Stopwatches/      Pomodoro focus timer and stopwatch
+│  └─ Timer/                   timer activity + picker (Timer / Focus / Stopwatch)
+├─ Addons/                     optional features with a switch each: SystemAddons/, Productivity/, Alerts/, Info/
 ├─ Settings/                   settings.json + Start with Windows
 ├─ Updates/UpdateChecker.cs    looks for newer GitHub releases (shared with the settings app)
 └─ UI/Ui.cs                    shared colors, fonts, icons and controls
