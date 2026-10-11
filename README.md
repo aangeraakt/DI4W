@@ -1,13 +1,27 @@
 # Dynamic Island for Windows
 
+[![Build](https://github.com/aangeraakt/DI4W/actions/workflows/build.yml/badge.svg)](https://github.com/aangeraakt/DI4W/actions/workflows/build.yml)
+[![Latest release](https://img.shields.io/github/v/release/aangeraakt/DI4W)](https://github.com/aangeraakt/DI4W/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 The iPhone Dynamic Island, rebuilt for the Windows desktop.
 
-A small black pill sits at the top-center of your screen. It changes shape to show what is going on: music playing, Claude working, a timer counting down, or a new Discord message.
+A small black pill sits at the top-center of your screen. It changes shape to show what is going on: music playing, Claude working, a timer counting down, a download finishing, or a new message.
 
 <p align="center">
-  <img src="docs/claude-done.png" alt="Claude is done alert" height="90">
-  &nbsp;&nbsp;
-  <img src="docs/split-timer-claude.png" alt="Timer with Claude in the side bubble" height="48">
+  <img src="docs/picker.png" alt="Timer picker with Timer, Focus and Stopwatch" height="150">
+  &nbsp;
+  <img src="docs/focus.png" alt="Focus timer, expanded" height="110">
+</p>
+<p align="center">
+  <img src="docs/download.png" alt="Download complete alert" height="76">
+  &nbsp;
+  <img src="docs/claude-done.png" alt="Claude is done alert" height="76">
+</p>
+<p align="center">
+  <img src="docs/weather.png" alt="Weather in the empty island" height="40">
+  &nbsp;
+  <img src="docs/split-timer-claude.png" alt="Timer with Claude in the side bubble" height="40">
 </p>
 
 ## Features
@@ -53,12 +67,20 @@ It also includes:
 - **Stays out of the way.** It never takes keyboard focus, you can click through everything around the pill, and it hides while a fullscreen game or video is playing.
 - **Lightweight.** Native C# and WPF, with a separate WinUI 3 settings app. Spotify works without a Spotify account or API key.
 
-## Requirements
+## Install
 
-- Windows 10 (version 2004 or later) or Windows 11
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+1. Install the [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0) if you don't have it. The installer tells you if it's missing.
+2. Download **DI4W-v…-win-x64.msi** from the [latest release](https://github.com/aangeraakt/DI4W/releases/latest) and run it.
 
-## Getting started
+The installer needs no administrator rights. It installs to `%LocalAppData%\Programs\Dynamic Island`, adds Start Menu shortcuts and an entry in **Settings → Apps → Installed apps**, and starts the island with Windows. You can turn that off in the settings app. Prefer no installer? The release also has a `.zip` you can unzip anywhere.
+
+Requires Windows 10 (version 2004 or later) or Windows 11, x64.
+
+<p align="center"><img src="docs/settings.png" alt="The settings app" width="640"></p>
+
+## Building from source
+
+You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```bash
 git clone https://github.com/aangeraakt/DI4W.git
@@ -140,7 +162,9 @@ You can add other apps, such as WhatsApp or Outlook, under **Notifications** in 
 
 Open **Settings…** from the tray or right-click menu. It is a separate WinUI 3 app in the Windows 11 Settings style, with macOS-style red, yellow and green window buttons in the top-left corner. Changes save immediately and the island applies them right away. Turning music or Claude Code on or off, or changing the port, restarts the island by itself.
 
-Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also edit that file by hand; the island picks up the changes.
+Each add-on shows its state under its switch, for example "Set your city below" for the weather, or "Next: Stand-up at 9:00" for the calendar. Orange means something needs your attention.
+
+Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also edit that file by hand; the island picks up the changes. If the file ever can't be read (a typo while editing), the island keeps it as `settings.json.bad` and starts with default settings, so nothing is lost.
 
 | Setting | Default | Description |
 |---|---|---|
@@ -163,8 +187,10 @@ Logs are written to `%AppData%\DynamicIsland\logs`.
 The app updates itself from this repository's [GitHub releases](https://github.com/aangeraakt/DI4W/releases).
 
 - A little after it starts, and every 6 hours after that, the island checks for a newer release. When there is one, an **Update available** alert pops out of the island. You can turn this off under **Settings → About → Check automatically**.
-- Click the alert, or go to **Settings → About → Check now**, to see what's new. **Download and install** downloads the release and checks its size and SHA-256 against what GitHub reports. It then closes both apps, replaces the files and starts the island again on the new version.
-- Your settings are kept, since they live in `%AppData%`, not in the app folder. The install log is `%AppData%\DynamicIsland\logs\update.log`.
+- Click the alert, or go to **Settings → About → Check now**, to see what's new. **Download and install** downloads the release and checks its size and SHA-256 against what GitHub reports.
+- **Installed with the installer:** the new installer runs and upgrades in place, so **Installed apps** stays correct.
+- **Unzipped copy:** the current files are backed up, the new ones are copied in, and if anything goes wrong the backup is put back, so you never end up with a half-updated mix.
+- Either way the island starts again afterwards, as you (never as administrator). Your settings are kept, since they live in `%AppData%`. The install log is `%AppData%\DynamicIsland\logs\update.log`.
 - Updating only works in the published app (`DynamicIsland.exe` with the settings app in `Settings\`), not when running from source.
 
 ### Publishing a release
@@ -173,9 +199,17 @@ The app updates itself from this repository's [GitHub releases](https://github.c
 powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.0
 ```
 
-This sets the version in both projects, builds and zips the app as `DI4W-v1.1.0-win-x64.zip`, commits and pushes the version change, and creates the `v1.1.0` release with the zip attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), or `-Draft` to review the release before publishing it. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
+This sets the version in both projects, builds the app, zips it as `DI4W-v1.1.0-win-x64.zip`, builds the installer `DI4W-v1.1.0-win-x64.msi` from the same files, commits and pushes the version change, and creates the `v1.1.0` release with both attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), or `-Draft` to review the release before publishing it. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
 
-The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip` asset. Drafts and pre-releases are ignored.
+The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip` or `*-win-x64.msi` asset. Drafts and pre-releases are ignored.
+
+### Tests
+
+```bash
+dotnet test tests/DynamicIsland.Tests
+```
+
+The tests cover the logic that decides things: shortcut parsing, chat-app and call detection, release and calendar parsing (including recurring meetings), the alert queue, and how settings are saved and recovered. GitHub Actions runs them, builds both apps and the installer on every push, and keeps the result as a downloadable `DI4W-build` artifact for 14 days.
 
 ## Troubleshooting
 
@@ -199,11 +233,14 @@ src/DynamicIsland/
 │  ├─ Focus/ Stopwatches/      Pomodoro focus timer and stopwatch
 │  └─ Timer/                   timer activity + picker (Timer / Focus / Stopwatch)
 ├─ Addons/                     optional features with a switch each: SystemAddons/, Productivity/, Alerts/, Info/
-├─ Settings/                   settings.json + Start with Windows
+├─ Settings/                   settings.json, status.json (add-on states), Start with Windows
 ├─ Updates/UpdateChecker.cs    looks for newer GitHub releases (shared with the settings app)
 └─ UI/Ui.cs                    shared colors, fonts, icons and controls
 src/DynamicIsland.Settings/     WinUI 3 settings app (shares Settings/ and Updates/ with the island)
-└─ Updater.cs                  downloads, verifies and installs updates
+└─ Updater.cs                  downloads, verifies and installs updates (with rollback)
+installer/                      WiX installer (.msi): per-user, Start Menu, Installed apps, autostart
+tests/DynamicIsland.Tests/      xUnit tests
+.github/workflows/build.yml     tests and builds on every push
 tools/
 ├─ claude-hook.ps1             called by Claude Code hooks, forwards events to the island
 ├─ install-claude-hooks.ps1    adds/removes the hooks in ~/.claude/settings.json

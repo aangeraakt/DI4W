@@ -1,0 +1,39 @@
+# Runs the tests and builds the app and installer on every push and pull request.
+# The built app and .msi are attached to the run as "DI4W-build" for trying out a change.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test
+        run: dotnet test tests/DynamicIsland.Tests -c Release
+
+      - name: Publish app (island + settings app)
+        run: dotnet publish src/DynamicIsland -c Release -o artifacts/DI4W
+
+      - name: Build installer
+        shell: pwsh
+        run: dotnet build installer --no-incremental -c Release -p:AppVersion=0.0.${{ github.run_number }} "-p:AppDir=${{ github.workspace }}\artifacts\DI4W" -o artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DI4W-build
+          path: |
+            artifacts/DI4W
+            artifacts/*.msi
+          retention-days: 14

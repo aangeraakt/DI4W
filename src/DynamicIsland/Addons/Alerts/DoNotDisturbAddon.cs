@@ -21,6 +21,7 @@ public sealed class DoNotDisturbAddon : Addon
 
     public DoNotDisturbAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.DoNotDisturb);
     public override string Name => "Do Not Disturb";
     protected override bool IsEnabled(AddonSettings o) => o.DoNotDisturb;
 

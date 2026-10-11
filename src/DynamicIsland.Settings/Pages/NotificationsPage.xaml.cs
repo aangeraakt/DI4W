@@ -19,8 +19,13 @@ public sealed partial class NotificationsPage : Page
         RenderChatApps();
         RenderApps();
         UpdateEnabled();
+        var access = SettingsStore.IslandRunning ? IslandStatus.TryLoad()?.NotificationAccess : null;
+        AccessBar.IsOpen = access is not null && access != "Allowed";
         _loading = false;
     }
+
+    private async void OnOpenPrivacy(object sender, RoutedEventArgs e) =>
+        await Launcher.LaunchUriAsync(new Uri("ms-settings:privacy-notifications"));
 
     private void OnEnabled(object sender, RoutedEventArgs e)
     {
@@ -95,7 +100,10 @@ public sealed partial class NotificationsPage : Page
         NewApp.Text = "";
         if (name.Length == 0) return;
         if (SettingsStore.Current.NotificationApps.Contains(name, StringComparer.OrdinalIgnoreCase)) return;
-        SettingsStore.Change(s => s.NotificationApps.Add(name));
+        SettingsStore.Change(s =>
+        {
+            if (!s.NotificationApps.Contains(name, StringComparer.OrdinalIgnoreCase)) s.NotificationApps.Add(name);
+        });
         RenderApps();
     }
 

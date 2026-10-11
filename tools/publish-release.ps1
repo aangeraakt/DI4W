@@ -3,8 +3,9 @@
 #   powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.0
 #   powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.0 -NotesFile notes.md
 #
-# Steps: set the version in both projects, publish, zip as DI4W-v<version>-win-x64.zip, commit and push the
-# version change, then create the release "v<version>" with the zip attached. Installed apps see it on their
+# Steps: set the version in both projects, publish, zip as DI4W-v<version>-win-x64.zip, build the installer
+# (DI4W-v<version>-win-x64.msi, see installer/), commit and push the
+# version change, then create the release "v<version>" with both attached. Installed apps see it on their
 # next update check. Needs the GitHub CLI, logged in (gh auth login).
 param(
     [Parameter(Mandatory)][string]$Version,
@@ -45,6 +46,14 @@ $zip = Join-Path $out "DI4W-$tag-win-x64.zip"
 Compress-Archive -Path (Join-Path $out 'DI4W') -DestinationPath $zip -CompressionLevel Optimal -ErrorAction Stop
 Write-Host ("Package: {0} ({1:N1} MB)" -f $zip, ((Get-Item $zip).Length / 1MB))
 
+# The installer, built from the same files.
+# --no-incremental: the installer's name changes per version, which an incremental build doesn't notice.
+dotnet build installer --no-incremental -c Release -p:AppVersion=$Version "-p:AppDir=$(Join-Path $out 'DI4W')" -o $out
+if ($LASTEXITCODE -ne 0) { throw "Building the installer failed." }
+$msi = Join-Path $out "DI4W-$tag-win-x64.msi"
+if (-not (Test-Path $msi)) { throw "Installer not found at $msi." }
+Write-Host ("Installer: {0} ({1:N1} MB)" -f $msi, ((Get-Item $msi).Length / 1MB))
+
 # 3. Commit the version change so the tag points at the code that was built.
 if (git status --porcelain) {
     git add src/DynamicIsland/DynamicIsland.csproj src/DynamicIsland.Settings/DynamicIsland.Settings.csproj
@@ -54,9 +63,9 @@ if (git status --porcelain) {
 git push origin HEAD
 if ($LASTEXITCODE -ne 0) { throw "git push failed." }
 
-# 4. The release. GitHub records the zip's SHA-256, which the updater checks after downloading.
+# 4. The release. GitHub records each file's SHA-256, which the updater checks after downloading.
 $notesArgs = if ($NotesFile) { @('--notes-file', $NotesFile) } else { @('--generate-notes') }
 $draftArgs = if ($Draft) { @('--draft') } else { @() }
-gh release create $tag $zip --repo $repo --target (git rev-parse HEAD) --title "Dynamic Island for Windows $tag" @notesArgs @draftArgs
+gh release create $tag $msi $zip --repo $repo --target (git rev-parse HEAD) --title "Dynamic Island for Windows $tag" @notesArgs @draftArgs
 if ($LASTEXITCODE -ne 0) { throw "Creating the release failed." }
 Write-Host "Released $tag. Installed apps will offer it on their next update check."

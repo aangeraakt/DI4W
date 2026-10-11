@@ -11,10 +11,11 @@ namespace DynamicIsland.Settings;
 /// </summary>
 public sealed class AppSettings
 {
-    public static string Folder { get; } =
+    /// <summary>%AppData%\DynamicIsland. Settable so tests can use a temporary folder.</summary>
+    public static string Folder { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DynamicIsland");
 
-    public static string FilePath { get; } = Path.Combine(Folder, "settings.json");
+    public static string FilePath => Path.Combine(Folder, "settings.json");
 
     /// <summary>Distance from the top of the screen to the island, in DIPs.</summary>
     public double TopOffset { get; set; } = 8;
@@ -71,11 +72,51 @@ public sealed class AppSettings
         }
         catch (Exception ex)
         {
-            Log.Error("Failed to read settings, using defaults", ex);
+            // Usually a typo from a hand edit. Keep the broken file so nothing is lost, then start fresh.
+            Log.Error($"Failed to read settings; kept a copy as {Path.GetFileName(FilePath)}.bad and using defaults", ex);
+            try
+            {
+                File.Copy(FilePath, FilePath + ".bad", overwrite: true);
+            }
+            catch (Exception copyError)
+            {
+                Log.Error("Could not keep a copy of the broken settings", copyError);
+            }
         }
         var s = new AppSettings();
         s.Save();
         return s;
+    }
+
+    /// <summary>
+    /// Changes settings on disk without overwriting what the other app changed: under a lock shared by the
+    /// island and the settings app, reads the latest file, applies <paramref name="change"/> and saves.
+    /// Returns the saved settings.
+    /// </summary>
+    public static AppSettings Update(Action<AppSettings> change)
+    {
+        using var gate = new Mutex(false, "DynamicIsland4Windows.SettingsFile");
+        var owned = false;
+        try
+        {
+            owned = gate.WaitOne(TimeSpan.FromSeconds(3));
+        }
+        catch (AbandonedMutexException)
+        {
+            owned = true; // the other app quit while holding it; the file itself is always whole (atomic swap)
+        }
+
+        try
+        {
+            var latest = File.Exists(FilePath) ? TryLoad() ?? Load() : new AppSettings();
+            change(latest);
+            latest.Save();
+            return latest;
+        }
+        finally
+        {
+            if (owned) gate.ReleaseMutex();
+        }
     }
 
     /// <summary>Reads the file without falling back to defaults; null if it is missing, locked or half-written.</summary>

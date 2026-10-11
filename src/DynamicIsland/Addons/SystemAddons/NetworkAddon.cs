@@ -19,6 +19,7 @@ public sealed class NetworkAddon : Addon
 
     public NetworkAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Network);
     public override string Name => "Network";
     protected override bool IsEnabled(AddonSettings o) => o.Network;
 

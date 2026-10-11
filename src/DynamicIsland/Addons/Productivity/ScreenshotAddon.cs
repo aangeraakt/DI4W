@@ -23,6 +23,7 @@ public sealed class ScreenshotAddon : Addon
 
     public ScreenshotAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Screenshots);
     public override string Name => "Screenshots";
     protected override bool IsEnabled(AddonSettings o) => o.Screenshots;
 

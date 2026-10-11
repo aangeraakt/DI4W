@@ -55,6 +55,8 @@ public sealed partial class AddonsPage : Page
         Toggle(nameof(AddonSettings.GameMode), "Game mode",
                "Keeps the island visible over fullscreen games, with GPU load and temperature. Frame rate isn't available: Windows only shares it with programs running as administrator.",
                "");
+
+        WatchStatus();
     }
 
     // ───────────────────────────── building blocks ─────────────────────────────
@@ -65,10 +67,53 @@ public sealed partial class AddonsPage : Page
     private void Toggle(string property, string header, string description, string glyph) => Root.Children.Add(new SettingsCard
     {
         Header = header,
-        Description = description,
+        Description = Describe(property, description),
         HeaderIcon = new FontIcon { Glyph = glyph },
         Content = BoolSwitch(property),
     });
+
+    // ───────────────────────────── live status from the island ─────────────────────────────
+
+    private readonly Dictionary<string, TextBlock> _statusLines = new();
+    private FileSystemWatcher? _statusWatcher;
+
+    /// <summary>The description plus a status line the island fills in ("Set your city below").</summary>
+    private object Describe(string? key, string description)
+    {
+        if (key is null) return description;
+        var status = new TextBlock { TextWrapping = TextWrapping.Wrap, Visibility = Visibility.Collapsed, Margin = new Thickness(0, 4, 0, 0) };
+        _statusLines[key] = status;
+        return new StackPanel { Children = { new TextBlock { Text = description, TextWrapping = TextWrapping.Wrap }, status } };
+    }
+
+    private void WatchStatus()
+    {
+        ShowStatus();
+        Directory.CreateDirectory(AppSettings.Folder);
+        _statusWatcher = new FileSystemWatcher(AppSettings.Folder, Path.GetFileName(IslandStatus.FilePath))
+        {
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName,
+            EnableRaisingEvents = true,
+        };
+        _statusWatcher.Changed += (_, _) => DispatcherQueue.TryEnqueue(ShowStatus);
+        _statusWatcher.Renamed += (_, _) => DispatcherQueue.TryEnqueue(ShowStatus);
+        Unloaded += (_, _) => _statusWatcher?.Dispose();
+    }
+
+    private void ShowStatus()
+    {
+        // A status file left behind by an island that isn't running would be stale; show nothing then.
+        var status = SettingsStore.IslandRunning ? IslandStatus.TryLoad() : null;
+        foreach (var (key, line) in _statusLines)
+        {
+            var state = status?.Addons.GetValueOrDefault(key);
+            var enabled = Property(key).GetValue(Options) is true;
+            line.Text = state?.Message ?? "";
+            line.Visibility = enabled && !string.IsNullOrEmpty(state?.Message) ? Visibility.Visible : Visibility.Collapsed;
+            line.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources[
+                state?.Problem == true ? "SystemFillColorCautionBrush" : "TextFillColorTertiaryBrush"];
+        }
+    }
 
     /// <summary>A card that opens to show options; with a property it also has an on/off switch.</summary>
     private void Expander(string? property, string header, string description, string glyph, params SettingsCard[] items)
@@ -76,7 +121,7 @@ public sealed partial class AddonsPage : Page
         var expander = new SettingsExpander
         {
             Header = header,
-            Description = description,
+            Description = Describe(property, description),
             HeaderIcon = new FontIcon { Glyph = glyph },
         };
         if (property is not null) expander.Content = BoolSwitch(property);
@@ -161,7 +206,10 @@ public sealed partial class AddonsPage : Page
             input.Text = "";
             if (!(url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("webcal", StringComparison.OrdinalIgnoreCase))
                 || Options.CalendarFeeds.Contains(url)) return;
-            SettingsStore.Change(s => s.Addons.CalendarFeeds.Add(url));
+            SettingsStore.Change(s =>
+            {
+                if (!s.Addons.CalendarFeeds.Contains(url)) s.Addons.CalendarFeeds.Add(url);
+            });
             Render();
         }
 

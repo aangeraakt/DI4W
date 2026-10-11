@@ -15,12 +15,17 @@ public sealed class BrightnessAddon : Addon
 
     public BrightnessAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Brightness);
     public override string Name => "Brightness";
     protected override bool IsEnabled(AddonSettings o) => o.Brightness;
 
     protected override void Start()
     {
-        if (!HasInternalDisplay()) return; // nothing to watch; stay "on" but idle
+        if (!HasInternalDisplay())
+        {
+            SetStatus("No built-in screen found. External monitors don't report brightness changes to Windows.", problem: false);
+            return; // nothing to watch; stay "on" but idle
+        }
 
         _watcher = new ManagementEventWatcher(new ManagementScope(@"root\wmi"),
                                               new EventQuery("SELECT * FROM WmiMonitorBrightnessEvent"));

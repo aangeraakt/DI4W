@@ -74,7 +74,8 @@ public sealed partial class AboutPage : Page
 
             UpdateCard.Description = $"Version {_update.Version} is available.";
             UpdateBar.Title = $"Version {_update.Version} is available";
-            UpdateBar.Message = $"You have {UpdateChecker.CurrentVersion}. Download size {_update.Size / 1048576.0:0.#} MB.";
+            var size = Updater.PickAsset(_update)?.Size ?? 0;
+            UpdateBar.Message = $"You have {UpdateChecker.CurrentVersion}. Download size {size / 1048576.0:0.#} MB.";
             UpdateBar.Severity = InfoBarSeverity.Informational;
             ReleaseNotes.Text = PlainText(_update.Notes);
             ReleaseNotes.Visibility = ReleaseNotes.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -125,7 +126,7 @@ public sealed partial class AboutPage : Page
 
             InstallButton.Content = "Installing…";
             SettingsStore.Flush();
-            Updater.Install(files, installFolder); // closes this app; the island restarts on the new version
+            Updater.Install(files, installFolder, _update.Version); // closes this app; the island restarts on the new version
         }
         catch (OperationCanceledException)
         {

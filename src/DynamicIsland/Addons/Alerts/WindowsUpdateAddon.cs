@@ -21,6 +21,7 @@ public sealed class WindowsUpdateAddon : Addon
 
     public WindowsUpdateAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.WindowsUpdate);
     public override string Name => "Windows Update";
     protected override bool IsEnabled(AddonSettings o) => o.WindowsUpdate;
 

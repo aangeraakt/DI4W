@@ -17,6 +17,7 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
 
     public VolumeAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Volume);
     public override string Name => "Volume";
     protected override bool IsEnabled(AddonSettings o) => o.Volume;
 
@@ -41,7 +42,12 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
     private void Attach()
     {
         Detach();
-        if (_enumerator is null || !_enumerator.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia)) return;
+        if (_enumerator is null || !_enumerator.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
+        {
+            SetStatus("No speakers or headphones found.", problem: false);
+            return;
+        }
+        SetStatus(null);
         _device = _enumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
         _device.AudioEndpointVolume.OnVolumeNotification += OnVolume;
         _quietUntil = DateTime.UtcNow.AddSeconds(1); // switching devices fires a notification; don't show it

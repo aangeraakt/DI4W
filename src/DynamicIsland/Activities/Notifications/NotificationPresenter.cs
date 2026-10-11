@@ -72,7 +72,7 @@ public sealed partial class NotificationPresenter
     }
 
     /// <summary>Call notifications from the supported apps, in English and Dutch.</summary>
-    private static bool IsCall(IncomingNotification n) => CallPattern().IsMatch($"{n.Title} {n.Body}");
+    internal static bool IsCall(IncomingNotification n) => CallPattern().IsMatch($"{n.Title} {n.Body}");
 
     [GeneratedRegex(@"incoming (voice |video |audio )?call|is calling|calling you|wants to (video )?call|ringing|" +
                     @"inkomende? (spraak|video)?\s?(oproep|gesprek)|belt (je|u)|wil je bellen|video-?oproep|spraakoproep",

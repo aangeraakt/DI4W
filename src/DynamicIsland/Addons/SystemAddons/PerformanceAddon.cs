@@ -21,6 +21,7 @@ public sealed class PerformanceAddon : Addon
 
     public PerformanceAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.PerformanceWarnings);
     public override string Name => "Performance warnings";
     protected override bool IsEnabled(AddonSettings o) => o.PerformanceWarnings;
 

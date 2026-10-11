@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,6 +35,7 @@ public sealed class WeatherAddon : Addon
         _view = new StackPanel { Orientation = Orientation.Horizontal, Children = { _icon, _temp } };
     }
 
+    public override string Key => nameof(AddonSettings.Weather);
     public override string Name => "Weather";
     protected override bool IsEnabled(AddonSettings o) => o.Weather;
 
@@ -91,12 +93,19 @@ public sealed class WeatherAddon : Addon
             _temp.Text = $"{Math.Round(temp)}°";
             _view.ToolTip = $"{description}, {Math.Round(temp)}° in {where.Value.Place}";
             Context.SetIdleTrailing(_view);
+            SetStatus($"{description}, {Math.Round(temp)}° in {where.Value.Place}", problem: false);
 
             if (Options.RainAlerts && !IsWet(code)) CheckRain(json.RootElement, where.Value.Place);
+        }
+        catch (HttpRequestException ex)
+        {
+            Log.Info($"Weather update failed: {ex.Message}");
+            SetStatus("Couldn't reach the weather service. Trying again in 15 minutes.");
         }
         catch (Exception ex)
         {
             Log.Info($"Weather update failed: {ex.Message}");
+            SetStatus($"Weather update failed: {ex.Message}");
         }
     }
 
@@ -134,6 +143,7 @@ public sealed class WeatherAddon : Addon
             if (!json.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0)
             {
                 Log.Info($"Weather: place '{query}' not found");
+                SetStatus($"Couldn't find \"{query}\". Check the spelling, or try a bigger city nearby.");
                 return null;
             }
             var r = results[0];
@@ -145,6 +155,7 @@ public sealed class WeatherAddon : Addon
             if (await Geolocator.RequestAccessAsync() != GeolocationAccessStatus.Allowed)
             {
                 Log.Info("Weather: no city set and Windows location is off");
+                SetStatus("Set your city below. (Windows location is off for desktop apps.)");
                 return null;
             }
             var pos = await new Geolocator { DesiredAccuracy = PositionAccuracy.Default }

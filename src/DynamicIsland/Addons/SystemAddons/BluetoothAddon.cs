@@ -30,6 +30,7 @@ public sealed class BluetoothAddon : Addon
 
     public BluetoothAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Bluetooth);
     public override string Name => "Bluetooth";
     protected override bool IsEnabled(AddonSettings o) => o.Bluetooth;
 
@@ -43,6 +44,10 @@ public sealed class BluetoothAddon : Addon
         _watcher.Updated += (_, u) => Context.Ui(() => Updated(u));
         _watcher.Removed += (_, u) => Context.Ui(() => _devices.Remove(u.Id));
         _watcher.EnumerationCompleted += (_, _) => Context.Ui(() => _ready = true); // don't announce what's already connected
+        _watcher.Stopped += (w, _) => Context.Ui(() =>
+        {
+            if (w.Status == DeviceWatcherStatus.Aborted) SetStatus("Bluetooth is off or this PC has no Bluetooth.", problem: false);
+        });
         _watcher.Start();
     }
 

@@ -14,12 +14,17 @@ public sealed class BatteryAddon : Addon
 
     public BatteryAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Battery);
     public override string Name => "Battery";
     protected override bool IsEnabled(AddonSettings o) => o.Battery;
 
     protected override void Start()
     {
-        if (PowerManager.BatteryStatus == BatteryStatus.NotPresent) return; // desktop PC: nothing to show
+        if (PowerManager.BatteryStatus == BatteryStatus.NotPresent)
+        {
+            SetStatus("This PC has no battery.", problem: false);
+            return; // desktop PC: nothing to show
+        }
         _pluggedIn = IsPluggedIn;
         _lastPercent = PowerManager.RemainingChargePercent;
         PowerManager.PowerSupplyStatusChanged += OnPowerSupply;

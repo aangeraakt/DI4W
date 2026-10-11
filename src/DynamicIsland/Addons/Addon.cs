@@ -55,7 +55,25 @@ public abstract class Addon
     protected AddonSettings Options => Context.Options;
 
     public abstract string Name { get; }
+
+    /// <summary>The add-on's switch in <see cref="AddonSettings"/>; the settings app shows the status under it.</summary>
+    public abstract string Key { get; }
+
     public bool Running { get; private set; }
+
+    /// <summary>What the settings app shows under this add-on ("Set a city to show the weather").</summary>
+    public string? StatusMessage { get; private set; }
+    public bool StatusIsProblem { get; private set; }
+    public event Action? StatusChanged;
+
+    /// <summary>Message for the settings app; <paramref name="problem"/> when the user needs to do something.</summary>
+    protected void SetStatus(string? message, bool problem = true)
+    {
+        if (message == StatusMessage && problem == StatusIsProblem) return;
+        StatusMessage = message;
+        StatusIsProblem = problem && message is not null;
+        StatusChanged?.Invoke();
+    }
 
     protected abstract bool IsEnabled(AddonSettings options);
     protected abstract void Start();
@@ -75,6 +93,7 @@ public abstract class Addon
         }
         try
         {
+            if (!wanted) SetStatus(null);
             if (wanted) Start();
             else Stop();
             Running = wanted;
@@ -85,7 +104,9 @@ public abstract class Addon
             Log.Error($"Add-on {Name} failed to {(wanted ? "start" : "stop")}", ex);
             if (wanted) TryStop();
             Running = false;
+            if (wanted) SetStatus($"Couldn't start: {ex.Message}");
         }
+        StatusChanged?.Invoke(); // Running changed
     }
 
     public void Shutdown()

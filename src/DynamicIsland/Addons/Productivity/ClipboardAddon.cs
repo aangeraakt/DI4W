@@ -29,6 +29,7 @@ public sealed class ClipboardAddon : Addon
 
     public ClipboardAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Clipboard);
     public override string Name => "Clipboard";
     protected override bool IsEnabled(AddonSettings o) => o.Clipboard;
 

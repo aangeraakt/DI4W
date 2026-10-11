@@ -18,6 +18,7 @@ public sealed class LockKeysAddon : Addon
 
     public LockKeysAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.LockKeys);
     public override string Name => "Lock keys";
     protected override bool IsEnabled(AddonSettings o) => o.LockKeys;
 

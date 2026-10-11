@@ -7,6 +7,14 @@
         <StackPanel Style="{StaticResource PageStack}">
             <TextBlock Text="Notifications" Style="{StaticResource PageTitle}" />
 
+            <InfoBar x:Name="AccessBar" Severity="Warning" IsClosable="False"
+                     Title="Windows is blocking notification access"
+                     Message="The island can't see new messages until you allow it under Privacy &amp; security → Notifications.">
+                <InfoBar.ActionButton>
+                    <Button Content="Open Windows settings" Click="OnOpenPrivacy" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
             <tk:SettingsCard Header="Show notifications in the island" Description="New messages pop out of the island. Click one to jump to the app.">
                 <tk:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xEA8F;" />

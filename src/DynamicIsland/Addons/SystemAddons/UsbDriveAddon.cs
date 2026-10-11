@@ -20,6 +20,7 @@ public sealed class UsbDriveAddon : Addon
 
     public UsbDriveAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.UsbDrives);
     public override string Name => "USB drives";
     protected override bool IsEnabled(AddonSettings o) => o.UsbDrives;
 

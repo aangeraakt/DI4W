@@ -26,6 +26,7 @@ public sealed class PrivacyAddon : Addon
 
     public PrivacyAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.PrivacyIndicators);
     public override string Name => "Privacy indicators";
     protected override bool IsEnabled(AddonSettings o) => o.PrivacyIndicators;
 

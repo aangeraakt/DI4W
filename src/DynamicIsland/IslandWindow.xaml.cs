@@ -120,7 +120,18 @@ public partial class IslandWindow : Window
 
         _manager.Changed += Refresh;
         Refresh();
+
+        // Closing the island window (installer upgrade/uninstall, Windows shutting down) quits the whole app
+        // cleanly, so the tray icon, hook port and settings are released properly.
+        Closing += (_, _) =>
+        {
+            if (_quitting) return;
+            _quitting = true;
+            Dispatcher.BeginInvoke(() => Application.Current.Shutdown());
+        };
     }
+
+    private bool _quitting;
 
     // ───────────────────────────── public API ─────────────────────────────
 

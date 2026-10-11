@@ -32,6 +32,10 @@
     <Resource Include="Assets\island.ico" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DynamicIsland.Tests" />
+  </ItemGroup>
+
   <!-- Claude Code hook scripts ship next to the exe so the settings app can install them. -->
   <ItemGroup>
     <None Include="..\..\tools\claude-hook.ps1;..\..\tools\install-claude-hooks.ps1" Link="tools\%(Filename)%(Extension)"

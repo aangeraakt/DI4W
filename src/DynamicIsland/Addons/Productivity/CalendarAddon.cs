@@ -17,7 +17,7 @@ namespace DynamicIsland.Addons.Productivity;
 /// </summary>
 public sealed partial class CalendarAddon : Addon
 {
-    private sealed record Meeting(string Key, string Title, DateTime Start, DateTime End, string? Location, string? JoinUrl);
+    internal sealed record Meeting(string Key, string Title, DateTime Start, DateTime End, string? Location, string? JoinUrl);
 
     private readonly HashSet<string> _announced = new();
     private List<Meeting> _meetings = new();
@@ -27,8 +27,9 @@ public sealed partial class CalendarAddon : Addon
 
     public CalendarAddon(AddonContext context) : base(context) { }
 
+    public override string Key => nameof(AddonSettings.Calendar);
     public override string Name => "Calendar";
-    protected override bool IsEnabled(AddonSettings o) => o.Calendar && o.CalendarFeeds.Count > 0;
+    protected override bool IsEnabled(AddonSettings o) => o.Calendar;
 
     protected override void Start()
     {
@@ -55,7 +56,10 @@ public sealed partial class CalendarAddon : Addon
         var to = DateTime.UtcNow.AddDays(1);
         var meetings = new List<Meeting>();
         _loadedFeeds = string.Join("\n", Options.CalendarFeeds);
-        foreach (var feed in Options.CalendarFeeds.ToList())
+        var feeds = Options.CalendarFeeds.ToList();
+        string? failure = null;
+        var failed = 0;
+        foreach (var feed in feeds)
         {
             try
             {
@@ -67,13 +71,37 @@ public sealed partial class CalendarAddon : Addon
             catch (Exception ex)
             {
                 Log.Info($"Calendar feed failed: {ex.Message}");
+                failed++;
+                failure = ex.Message;
             }
         }
         _meetings = meetings;
+        ReportStatus(feeds.Count, failed, failure);
         Check();
     }
 
-    private static List<Meeting> Parse(string ics, DateTime fromUtc, DateTime toUtc)
+    private void ReportStatus(int feeds, int failed, string? failure)
+    {
+        if (feeds == 0)
+        {
+            SetStatus("Add a calendar link below to get meeting reminders.");
+        }
+        else if (failed > 0)
+        {
+            SetStatus(feeds == 1
+                ? $"Couldn't load your calendar: {failure}"
+                : $"{failed} of {feeds} calendar links couldn't be loaded: {failure}");
+        }
+        else
+        {
+            var next = _meetings.Where(m => m.Start > DateTime.UtcNow).OrderBy(m => m.Start).FirstOrDefault();
+            SetStatus(next is null
+                ? "No meetings in the next 24 hours."
+                : $"Next: {next.Title} at {next.Start.ToLocalTime():t}", problem: false);
+        }
+    }
+
+    internal static List<Meeting> Parse(string ics, DateTime fromUtc, DateTime toUtc)
     {
         var result = new List<Meeting>();
         var calendar = IcalCalendar.Load(ics);
@@ -135,7 +163,7 @@ public sealed partial class CalendarAddon : Addon
     }
 
     /// <summary>The first online-meeting link in the text.</summary>
-    private static string? JoinLink(string text)
+    internal static string? JoinLink(string text)
     {
         var match = JoinPattern().Match(text);
         return match.Success ? match.Value.TrimEnd('.', ',', ')', '>') : null;

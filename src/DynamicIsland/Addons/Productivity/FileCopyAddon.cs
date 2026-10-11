@@ -36,6 +36,7 @@ public sealed partial class FileCopyAddon : Addon
         context.Manager.Register(_activity);
     }
 
+    public override string Key => nameof(AddonSettings.FileCopy);
     public override string Name => "File copy";
     protected override bool IsEnabled(AddonSettings o) => o.FileCopy;
 

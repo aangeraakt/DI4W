@@ -42,6 +42,7 @@ public sealed class DownloadsAddon : Addon
         context.Manager.Register(_activity);
     }
 
+    public override string Key => nameof(AddonSettings.Downloads);
     public override string Name => "Downloads";
     protected override bool IsEnabled(AddonSettings o) => o.Downloads;
 
@@ -178,7 +179,7 @@ public sealed class DownloadsAddon : Addon
     }
 
     // "photo.jpg.crdownload" -> "photo.jpg"; Chrome's placeholder "Unconfirmed 1234" -> "New download"
-    private static string DisplayName(string path)
+    internal static string DisplayName(string path)
     {
         var name = Path.GetFileNameWithoutExtension(path);
         return name.StartsWith("Unconfirmed ", StringComparison.OrdinalIgnoreCase) ? "New download" : name;

@@ -87,8 +87,8 @@ public partial class App : Application
         _settings = AppSettings.Load();
         if (_settings.IslandPath != Environment.ProcessPath)
         {
-            _settings.IslandPath = Environment.ProcessPath;
-            _settings.Save();
+            var path = Environment.ProcessPath;
+            _settings = AppSettings.Update(s => s.IslandPath = path);
         }
         _manager = new ActivityManager();
 
@@ -139,6 +139,7 @@ public partial class App : Application
 
         if (_settings.MediaEnabled) await mediaService.StartAsync();
         await _notifications.StartAsync();
+        _addons?.SetNotificationAccess(_notifications.Status);
     }
 
     protected override void OnExit(ExitEventArgs e)

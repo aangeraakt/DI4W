@@ -37,12 +37,14 @@ public sealed class GameModeAddon : Addon
         context.Manager.Register(_activity);
     }
 
+    public override string Key => nameof(AddonSettings.GameMode);
     public override string Name => "Game mode";
     protected override bool IsEnabled(AddonSettings o) => o.GameMode;
 
     protected override void Start()
     {
         _cpu.Read();
+        if (SystemLoad.GpuTemperature() is null) SetStatus("GPU temperature needs an NVIDIA graphics card; load is still shown.", problem: false);
         _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _poll.Tick += (_, _) => Check();
         _poll.Start();
