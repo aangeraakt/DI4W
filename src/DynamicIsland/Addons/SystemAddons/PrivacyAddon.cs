@@ -30,6 +30,8 @@ public sealed class PrivacyAddon : Addon
     public override string Name => "Privacy indicators";
     protected override bool IsEnabled(AddonSettings o) => o.PrivacyIndicators;
 
+    public override void Preview() => Announce(L.F("{0} is using the microphone", "Teams"), "", Ui.Orange);
+
     protected override void Start()
     {
         _mic = InUse("microphone");

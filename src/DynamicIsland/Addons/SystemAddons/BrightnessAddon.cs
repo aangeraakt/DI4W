@@ -10,7 +10,7 @@ namespace DynamicIsland.Addons.SystemAddons;
 /// </summary>
 public sealed class BrightnessAddon : Addon
 {
-    private readonly HudView _hud = new("", Ui.White);
+    private readonly HudView _hud = new("", Ui.Primary);
     private ManagementEventWatcher? _watcher;
 
     public BrightnessAddon(AddonContext context) : base(context) { }
@@ -18,6 +18,12 @@ public sealed class BrightnessAddon : Addon
     public override string Key => nameof(AddonSettings.Brightness);
     public override string Name => "Brightness";
     protected override bool IsEnabled(AddonSettings o) => o.Brightness;
+
+    public override void Preview()
+    {
+        _hud.Set(0.75, "75");
+        Show(_hud.Alert);
+    }
 
     protected override void Start()
     {

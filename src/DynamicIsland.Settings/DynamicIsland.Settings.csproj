@@ -37,6 +37,8 @@
     <Compile Include="..\DynamicIsland\Settings\AppSettings.cs" Link="Shared\AppSettings.cs" />
     <Compile Include="..\DynamicIsland\Settings\IslandStatus.cs" Link="Shared\IslandStatus.cs" />
     <Compile Include="..\DynamicIsland\Settings\Displays.cs" Link="Shared\Displays.cs" />
+    <Compile Include="..\DynamicIsland\Settings\IslandTheme.cs" Link="Shared\IslandTheme.cs" />
+    <Compile Include="..\DynamicIsland\Settings\IslandMessages.cs" Link="Shared\IslandMessages.cs" />
     <Compile Include="..\DynamicIsland\Settings\L.cs" Link="Shared\L.cs" />
     <Compile Include="..\DynamicIsland\Settings\Strings.nl.cs" Link="Shared\Strings.nl.cs" />
     <Compile Include="..\DynamicIsland\Core\Log.cs" Link="Shared\Log.cs" />

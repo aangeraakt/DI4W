@@ -61,7 +61,139 @@ public sealed partial class AddonsPage : Page
                  L.T("Lets scripts and apps on this PC show their own pop-ups and progress in the island. Web pages can't use it. The island restarts to apply this."),
                  "", ApiExample());
 
+        Layout();
+        Search.PlaceholderText = L.T("Search add-ons");
+        PreviewInfo.IsOpen = false;
+        PreviewAction.Click += (_, _) => _previewAction?.Invoke();
         WatchStatus();
+    }
+
+    // ───────────────────────────── sections, search and filter ─────────────────────────────
+
+    /// <summary>One card, its section, and the words search looks at.</summary>
+    private sealed record Entry(FrameworkElement Card, string? Property, string Text, Group Group);
+
+    private sealed class Group
+    {
+        public required TextBlock Header { get; init; }
+        public List<Entry> Entries { get; } = new();
+    }
+
+    private readonly List<Group> _groups = new();
+
+    private static bool IsOn(string? property) => property is null || Property(property).GetValue(Options) is true;
+
+    /// <summary>Adds the sections to the page, with the add-ons that are on first in each (the order is fixed
+    /// while the page is open, so a card doesn't jump away from the mouse when it's switched).</summary>
+    private void Layout()
+    {
+        foreach (var group in _groups)
+        {
+            Root.Children.Add(group.Header);
+            foreach (var entry in group.Entries.OrderBy(e => IsOn(e.Property) ? 0 : 1)) Root.Children.Add(entry.Card);
+        }
+        UpdateSummary();
+    }
+
+    private void UpdateSummary()
+    {
+        var switches = _groups.SelectMany(g => g.Entries).Where(e => e.Property is not null).ToList();
+        Summary.Text = L.F("{0} of {1} add-ons are on", switches.Count(e => IsOn(e.Property)), switches.Count);
+    }
+
+    private void OnSearch(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args) => ApplyFilter();
+
+    private void OnFilter(object sender, SelectionChangedEventArgs e) => ApplyFilter();
+
+    private void ApplyFilter()
+    {
+        if (Root is null || NoMatches is null) return; // during InitializeComponent
+        var words = (Search.Text ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var any = false;
+        foreach (var group in _groups)
+        {
+            var groupVisible = false;
+            foreach (var entry in group.Entries)
+            {
+                var visible = words.All(w => entry.Text.Contains(w, StringComparison.CurrentCultureIgnoreCase))
+                              && Filter.SelectedIndex switch
+                              {
+                                  1 => entry.Property is not null && IsOn(entry.Property),
+                                  2 => entry.Property is not null && !IsOn(entry.Property),
+                                  _ => true,
+                              };
+                entry.Card.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+                groupVisible |= visible;
+            }
+            group.Header.Visibility = groupVisible ? Visibility.Visible : Visibility.Collapsed;
+            any |= groupVisible;
+        }
+        NoMatches.Visibility = any ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // ───────────────────────────── previews ─────────────────────────────
+
+    /// <summary>Add-ons without a pop-up of their own to show.</summary>
+    private static readonly HashSet<string> NoPreview = new() { nameof(AddonSettings.IslandApi) };
+
+    private Action? _previewAction;
+
+    private Button PreviewButton(string property)
+    {
+        var button = new Button { Content = L.T("Preview"), Margin = new Thickness(0, 0, 12, 0) };
+        ToolTipService.SetToolTip(button, L.T("Show a sample in the island"));
+        button.Click += async (_, _) => await ShowPreview(property);
+        return button;
+    }
+
+    private async Task ShowPreview(string key)
+    {
+        if (!SettingsStore.IslandRunning)
+        {
+            Explain(L.T("The island isn't running"), L.T("Start it to see previews."), L.T("Start island"), () =>
+            {
+                SettingsStore.StartIsland();
+                PreviewInfo.IsOpen = false;
+            });
+            return;
+        }
+        // Read the file: the island may have been hidden or shown with the shortcut since this window opened.
+        if ((AppSettings.TryLoad() ?? SettingsStore.Current).Paused)
+        {
+            Explain(L.T("The island is hidden"), L.T("Show it again to see the preview."), L.T("Show island"), async () =>
+            {
+                PreviewInfo.IsOpen = false;
+                SettingsStore.Change(s => s.Paused = false);
+                SettingsStore.Flush();
+                await Task.Delay(1200); // the island picks the change up, then fades in
+                await Task.Run(() => IslandMessages.Send(IslandMessages.PreviewPrefix + key));
+            });
+            return;
+        }
+        PreviewInfo.IsOpen = false;
+        if (!await Task.Run(() => IslandMessages.Send(IslandMessages.PreviewPrefix + key)))
+        {
+            Explain(L.T("The island didn't respond"), L.T("Try again in a moment, or restart it from the tray icon."), null, null);
+        }
+    }
+
+    private void Explain(string title, string message, string? action, Action? onAction)
+    {
+        PreviewInfo.Title = title;
+        PreviewInfo.Message = message;
+        PreviewAction.Content = action;
+        PreviewAction.Visibility = action is null ? Visibility.Collapsed : Visibility.Visible;
+        _previewAction = onAction;
+        PreviewInfo.IsOpen = true;
+    }
+
+    /// <summary>The on/off switch, with a Preview button in front of it when the add-on has a pop-up.</summary>
+    private FrameworkElement Controls(string property)
+    {
+        var toggle = BoolSwitch(property);
+        toggle.Toggled += (_, _) => UpdateSummary();
+        if (NoPreview.Contains(property)) return toggle;
+        return new StackPanel { Orientation = Orientation.Horizontal, Children = { PreviewButton(property), toggle } };
     }
 
     private static SettingsCard ApiExample()
@@ -104,15 +236,21 @@ public sealed partial class AddonsPage : Page
     // ───────────────────────────── building blocks ─────────────────────────────
 
     private void Section(string title) =>
-        Root.Children.Add(new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SectionHeader"] });
+        _groups.Add(new Group { Header = new TextBlock { Text = title, Style = (Style)Application.Current.Resources["SectionHeader"] } });
 
-    private void Toggle(string property, string header, string description, string glyph) => Root.Children.Add(new SettingsCard
+    private void Add(FrameworkElement card, string? property, string header, string description)
+    {
+        var group = _groups[^1];
+        group.Entries.Add(new Entry(card, property, $"{group.Header.Text} {header} {description}", group));
+    }
+
+    private void Toggle(string property, string header, string description, string glyph) => Add(new SettingsCard
     {
         Header = header,
         Description = Describe(property, description),
         HeaderIcon = new FontIcon { Glyph = glyph },
-        Content = BoolSwitch(property),
-    });
+        Content = Controls(property),
+    }, property, header, description);
 
     // ───────────────────────────── live status from the island ─────────────────────────────
 
@@ -166,9 +304,9 @@ public sealed partial class AddonsPage : Page
             Description = Describe(property, description),
             HeaderIcon = new FontIcon { Glyph = glyph },
         };
-        if (property is not null) expander.Content = BoolSwitch(property);
+        if (property is not null) expander.Content = Controls(property);
         foreach (var item in items) expander.Items.Add(item);
-        Root.Children.Add(expander);
+        Add(expander, property, header, description);
     }
 
     private static SettingsCard Switch(string header, string description, string property) =>

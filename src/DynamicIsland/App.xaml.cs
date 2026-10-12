@@ -85,8 +85,12 @@ public partial class App : Application
                                                null, Timeout.Infinite, executeOnlyOnce: true);
 
         Log.Info($"Starting Dynamic Island {UpdateChecker.CurrentVersion}");
+        var firstRun = !File.Exists(AppSettings.FilePath);
         _settings = AppSettings.Load();
         L.Use(_settings.Language);
+        // Before any view is built: the colors are read once.
+        Palette.Light = IslandTheme.IsLight(_settings.Theme);
+        ApplyMenuTheme();
         if (_settings.IslandPath != Environment.ProcessPath)
         {
             var path = Environment.ProcessPath;
@@ -120,6 +124,7 @@ public partial class App : Application
         };
         _island.Show();
         _island.HotkeyPressed += () => SetPaused(!Paused);
+        _island.MessageReceived += OnWindowMessage;
         _island.RegisterHideHotkey(_settings.HideHotkey);
         _island.RegisterExpandHotkey(_settings.ExpandHotkey);
 
@@ -129,7 +134,11 @@ public partial class App : Application
         CreateTray();
         if (_settings.Paused) SetPaused(true, save: false); // hidden before the restart: stay hidden
         WatchSettings();
+        WatchWindowsTheme();
         ScheduleUpdateChecks();
+
+        // A fresh install: show the welcome tour in the settings app once the island is up.
+        if (firstRun) _ = Dispatcher.BeginInvoke(() => OpenSettings("--welcome"), DispatcherPriority.ApplicationIdle);
 
         // Integrations
         // One local server for Claude Code hooks (/claude/...) and the Island API (/alert, /progress).
@@ -235,7 +244,8 @@ public partial class App : Application
                            || updated.ClaudePort != _settings.ClaudePort
                            || updated.MediaEnabled != _settings.MediaEnabled
                            || updated.Addons.IslandApi != _settings.Addons.IslandApi
-                           || updated.Language != _settings.Language;
+                           || updated.Language != _settings.Language
+                           || IslandTheme.IsLight(updated.Theme) != Palette.Light;
 
         var hotkeyChanged = updated.HideHotkey != _settings.HideHotkey;
         var expandHotkeyChanged = updated.ExpandHotkey != _settings.ExpandHotkey;
@@ -252,6 +262,51 @@ public partial class App : Application
             Log.Info("Restarting to apply settings");
             _restart = true;
             Shutdown();
+        }
+    }
+
+    // ───────────────────────────── theme ─────────────────────────────
+
+    /// <summary>With the theme set to follow Windows, switching Windows between light and dark restarts the
+    /// island in the new colors (views are built once, so they can't be recolored in place).</summary>
+    private void WatchWindowsTheme()
+    {
+        Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, e) =>
+        {
+            if (e.Category != Microsoft.Win32.UserPreferenceCategory.General) return;
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (_settings.Theme != IslandTheme.System || IslandTheme.IsLight(_settings.Theme) == Palette.Light || _restart) return;
+                Log.Info("Windows switched between light and dark; restarting in the new colors");
+                _restart = true;
+                Shutdown();
+            });
+        };
+    }
+
+    /// <summary>The right-click / tray menu in the island's colors.</summary>
+    private void ApplyMenuTheme()
+    {
+        if (!Palette.Light) return;
+        var style = new Style(typeof(ContextMenu), (Style)Resources[typeof(ContextMenu)]);
+        style.Setters.Add(new Setter(Control.BackgroundProperty, Ui.Brush("#F9F9F9")));
+        style.Setters.Add(new Setter(Control.ForegroundProperty, Ui.Brush("#1C1C1E")));
+        style.Setters.Add(new Setter(Control.BorderBrushProperty, Ui.Brush("#D1D1D6")));
+        Resources[typeof(ContextMenu)] = style;
+    }
+
+    // ───────────────────────────── previews from the settings app ─────────────────────────────
+
+    /// <summary>The settings app's Preview buttons send "preview:Battery" (WM_COPYDATA) to show a sample pop-up.</summary>
+    private void OnWindowMessage(int msg, IntPtr wParam, IntPtr lParam)
+    {
+        const int WM_COPYDATA = 0x004A;
+        if (msg != WM_COPYDATA || IslandMessages.Read(lParam) is not { } text) return;
+        if (text.StartsWith(IslandMessages.PreviewPrefix, StringComparison.Ordinal))
+        {
+            var key = text[IslandMessages.PreviewPrefix.Length..];
+            // Not while handling SendMessage: the settings app waits for it to return.
+            Dispatcher.BeginInvoke(() => _addons?.Preview(key));
         }
     }
 
@@ -301,8 +356,14 @@ public partial class App : Application
         _tray = new TaskbarIcon
         {
             ToolTipText = L.T("Dynamic Island"),
-            IconSource = new BitmapImage(new Uri("pack://application:,,,/Assets/island.ico")),
+            Icon = TrayIcons.Normal,
             ContextMenu = BuildMenu(),
+            NoLeftClickDelay = true,
+        };
+        // One click brings a hidden island back; a double-click opens the settings.
+        _tray.TrayLeftMouseUp += (_, _) =>
+        {
+            if (Paused) SetPaused(false);
         };
         _tray.TrayMouseDoubleClick += (_, _) => OpenSettings();
         _tray.ForceCreate(enablesEfficiencyMode: false);
@@ -321,7 +382,20 @@ public partial class App : Application
     {
         menu.Items.Clear();
 
-        var timer = new MenuItem { Header = L.T("Start timer") };
+        // The island itself: open the settings (also a double-click on the tray icon), and show or hide it.
+        var settings = Item(L.T("Open settings"), () => OpenSettings(), "");
+        settings.FontWeight = FontWeights.SemiBold;
+        menu.Items.Add(settings);
+        var shortcut = Hotkey.TryParse(_settings.HideHotkey, out _, out _) ? _settings.HideHotkey : "";
+        var visibility = Paused
+            ? Item(L.T("Show island"), () => SetPaused(false), "")
+            : Item(L.T("Hide island"), () => SetPaused(true), "");
+        visibility.InputGestureText = shortcut;
+        menu.Items.Add(visibility);
+        menu.Items.Add(new Separator());
+
+        // Timers.
+        var timer = new MenuItem { Header = L.T("Start timer"), Icon = MenuIcon(Icons.TimerGlyph) };
         foreach (var m in new[] { 1, 3, 5, 10, 15, 25, 45, 60 })
         {
             timer.Items.Add(Item(L.F("{0} minutes", m), () => StartTimer(TimeSpan.FromMinutes(m))));
@@ -329,28 +403,20 @@ public partial class App : Application
         timer.Items.Add(new Separator());
         timer.Items.Add(Item(L.T("Custom…"), () =>
         {
+            if (Paused) SetPaused(false);
             _island?.OpenPanel(BuildPicker(), TimerPicker.PanelSize);
         }));
         menu.Items.Add(timer);
-        if (_timer.IsActive) menu.Items.Add(Item(L.T("Cancel timer"), _timer.Cancel));
-        menu.Items.Add(_focus.IsActive ? Item(L.T("Stop focus session"), _focus.Stop) : Item(L.T("Start focus session"), StartFocus));
-        menu.Items.Add(_stopwatch.IsActive ? Item(L.T("Stop stopwatch"), _stopwatch.Stop) : Item(L.T("Start stopwatch"), StartStopwatch));
+        if (_timer.IsActive) menu.Items.Add(Item(L.T("Cancel timer"), _timer.Cancel, ""));
+        menu.Items.Add(_focus.IsActive ? Item(L.T("Stop focus session"), _focus.Stop, "") : Item(L.T("Start focus session"), StartFocus, ""));
+        menu.Items.Add(_stopwatch.IsActive ? Item(L.T("Stop stopwatch"), _stopwatch.Stop, "") : Item(L.T("Start stopwatch"), StartStopwatch, ""));
         menu.Items.Add(new Separator());
 
-        var pause = new MenuItem
-        {
-            Header = L.T("Pause island"),
-            IsCheckable = true,
-            IsChecked = Paused,
-            InputGestureText = Hotkey.TryParse(_settings.HideHotkey, out _, out _) ? _settings.HideHotkey : "",
-        };
-        pause.Click += (_, _) => SetPaused(pause.IsChecked);
-        menu.Items.Add(pause);
-        menu.Items.Add(Item(L.T("Settings…"), () => OpenSettings()));
-        menu.Items.Add(Item(L.T("Check for updates…"), () => OpenSettings("--page", "About")));
-        menu.Items.Add(new Separator());
-        menu.Items.Add(Item(L.T("Quit"), Shutdown));
+        menu.Items.Add(Item(L.T("Check for updates…"), () => OpenSettings("--page", "About"), ""));
+        menu.Items.Add(Item(L.T("Quit"), Shutdown, ""));
     }
+
+    private static TextBlock MenuIcon(string glyph) => Ui.Glyph(glyph, 14, Ui.Primary);
 
     /// <summary>
     /// Hides or shows the island. Used by the menu and the hide shortcut; the menu reads Paused when it opens.
@@ -361,14 +427,19 @@ public partial class App : Application
         Paused = paused;
         if (paused) _island?.Hide();
         else _island?.Show();
-        if (_tray is not null) _tray.ToolTipText = paused ? L.T("Dynamic Island (hidden)") : L.T("Dynamic Island");
+        if (_tray is not null)
+        {
+            _tray.Icon = paused ? TrayIcons.Paused : TrayIcons.Normal;
+            _tray.ToolTipText = paused ? L.T("Dynamic Island is hidden. Click to show it.") : L.T("Dynamic Island");
+        }
         if (save && _settings.Paused != paused) AppSettings.Update(s => s.Paused = paused);
         _settings.Paused = paused;
     }
 
-    private static MenuItem Item(string header, Action onClick)
+    private static MenuItem Item(string header, Action onClick, string? glyph = null)
     {
         var item = new MenuItem { Header = header };
+        if (glyph is not null) item.Icon = MenuIcon(glyph);
         item.Click += (_, _) => onClick();
         return item;
     }

@@ -37,7 +37,7 @@ A small black pill sits at the top-center of your screen. It changes shape to sh
 
 ### Add-ons
 
-Each one has its own switch under **Settings → Add-ons** (calls and chat apps under **Notifications**).
+Each one has its own switch under **Settings → Add-ons** (calls and chat apps under **Notifications**). Search the list, show only the ones that are on or off, and press **Preview** to see a sample pop-up in the island.
 
 | | What it shows |
 |---|---|
@@ -69,6 +69,8 @@ It also includes:
 - **Any display.** Pick the display it sits on, or let it follow your mouse. It stays below a taskbar that's at the top of the screen.
 - **English and Dutch.** It follows your Windows language, or you can pick one under **Settings → General**.
 - **Accessible.** Screen readers announce new pop-ups and can read what the island shows. **Ctrl+Alt+O** opens it without a mouse.
+- **Dark or light.** A black pill like the iPhone, a light one, or one that follows Windows' light or dark mode. Size, distance from the top and theme have a live preview under **Settings → General**.
+- **Welcome tour.** After a fresh install the settings app explains the island and its shortcuts and lets you pick add-ons. See it again under **Settings → About**.
 
 ## Install
 
@@ -110,7 +112,8 @@ This publishes the island and the settings app (`publish\Settings\`) in one go. 
 | **Move the mouse away** | Collapses it again. |
 | **Click the small circle** | Swaps the second activity into the main pill. |
 | **Click an alert** | Opens the app it came from and closes the alert. |
-| **Right-click the island or tray icon** | Quick timers, Pause, **Settings…** and Quit. |
+| **Right-click the island or tray icon** | **Open settings**, hide or show the island, timers, focus and stopwatch, updates and Quit. |
+| **Click the tray icon** | Brings a hidden island back. While it's hidden the tray icon is faded with an orange pause badge. |
 | **Double-click the tray icon** | Opens the settings app. |
 | **Press Ctrl+Alt+I** | Hides the island, or brings it back. It stays hidden after a restart until you show it again. |
 | **Press Ctrl+Alt+O** | Opens what the island shows (or the timer picker), and closes it again. Both shortcuts can be changed under **Settings → General**. |
@@ -164,7 +167,7 @@ You can add other apps, such as WhatsApp or Outlook, under **Notifications** in 
 
 ## Settings
 
-Open **Settings…** from the tray or right-click menu. It is a separate WinUI 3 app in the Windows 11 Settings style, with macOS-style red, yellow and green window buttons in the top-left corner. Changes save immediately and the island applies them right away. Turning music or Claude Code on or off, or changing the port, restarts the island by itself.
+Choose **Open settings** from the tray or right-click menu. It is a separate WinUI 3 app in the Windows 11 Settings style, with macOS-style red, yellow and green window buttons in the top-left corner. Changes save immediately and the island applies them right away. Turning music or Claude Code on or off, changing the port, the language or the theme restarts the island by itself.
 
 Each add-on shows its state under its switch, for example "Set your city below" for the weather, or "Next: Stand-up at 9:00" for the calendar. Orange means something needs your attention.
 
@@ -174,6 +177,7 @@ Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also ed
 |---|---|---|
 | `TopOffset` | `8` | Distance from the top of the screen |
 | `Scale` | `1.0` | Overall size (also under **Size** in the menu) |
+| `Theme` | `""` | `""` dark, `"Light"`, or `"System"` to follow Windows |
 | `HideInFullscreen` | `true` | Hide while fullscreen games or videos run |
 | `MediaEnabled` | `true` | Show the music activity |
 | `MediaAnyPlayer` | `false` | Show players other than Spotify |

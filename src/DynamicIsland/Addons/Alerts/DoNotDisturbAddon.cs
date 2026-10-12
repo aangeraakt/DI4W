@@ -26,6 +26,14 @@ public sealed class DoNotDisturbAddon : Addon
     public override string Name => "Do Not Disturb";
     protected override bool IsEnabled(AddonSettings o) => o.DoNotDisturb;
 
+    /// <summary>The real thing is just the moon in the empty island; the sample says what it means.</summary>
+    public override void Preview()
+    {
+        var hud = new HudView(_moon.Text, Ui.Indigo);
+        hud.Set(null, L.T("Do Not Disturb is on"));
+        Show(hud.Alert);
+    }
+
     protected override void Start()
     {
         _moon.ToolTip = L.T("Do Not Disturb is on");

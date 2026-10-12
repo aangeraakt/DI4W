@@ -103,6 +103,9 @@ public sealed class ClipboardAddon : Addon
         return false;
     }
 
+    public override void Preview() =>
+        ShowCopied(Ui.GlyphCircle("", Ui.ButtonBg, 46, 20), L.T("Copied"), L.T("A preview of the text you copy shows up here"));
+
     private void ShowCopied(FrameworkElement icon, string title, string preview)
     {
         _lastShown = DateTime.UtcNow;

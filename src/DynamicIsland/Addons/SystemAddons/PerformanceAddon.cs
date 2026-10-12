@@ -25,6 +25,8 @@ public sealed class PerformanceAddon : Addon
     public override string Name => "Performance warnings";
     protected override bool IsEnabled(AddonSettings o) => o.PerformanceWarnings;
 
+    public override void Preview() => Show(WarningAlert(L.T("CPU is working hard"), L.F("{0:0}% for a minute", 96), openTaskManager: false));
+
     protected override void Start()
     {
         _cpu.Read();
@@ -80,13 +82,17 @@ public sealed class PerformanceAddon : Addon
     {
         _lastWarned[kind] = DateTime.UtcNow;
         _since.Remove(kind);
-        Show(new IslandAlert
-        {
-            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Amber, 46, 20), title, subtitle, Ui.Amber),
-            Size = new Size(400, 76),
-            Duration = TimeSpan.FromSeconds(6),
-            StickyUntilHover = true,
-            OnClick = () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("taskmgr.exe") { UseShellExecute = true }),
-        });
+        Show(WarningAlert(title, subtitle, openTaskManager: true));
     }
+
+    private static IslandAlert WarningAlert(string title, string subtitle, bool openTaskManager) => new()
+    {
+        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Amber, 46, 20), title, subtitle, Ui.Amber),
+        Size = new Size(400, 76),
+        Duration = TimeSpan.FromSeconds(6),
+        StickyUntilHover = true,
+        OnClick = openTaskManager
+            ? () => System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("taskmgr.exe") { UseShellExecute = true })
+            : null,
+    };
 }

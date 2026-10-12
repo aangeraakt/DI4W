@@ -29,7 +29,7 @@ public sealed class ClaudeActivity : Activity
 
     private readonly TextBlock _compactText = Ui.Text("", 14, FontWeights.SemiBold, Ui.ClaudeOrange, tabular: true);
     private readonly StackPanel _sessionList = new() { Margin = new Thickness(0, 6, 0, 0) };
-    private readonly TextBlock _expandedTitle = Ui.Text(L.T("Claude is working"), 16, FontWeights.SemiBold, Ui.White);
+    private readonly TextBlock _expandedTitle = Ui.Text(L.T("Claude is working"), 16, FontWeights.SemiBold, Ui.Primary);
 
     public ClaudeActivity(ActivityManager manager, AppSettings settings)
     {
@@ -129,7 +129,7 @@ public sealed class ClaudeActivity : Activity
 
     private void ShowDone(string project, TimeSpan? took)
     {
-        var icon = Ui.GlyphCircle("", Ui.Brush("#2A1A14"), 46, 1);
+        var icon = Ui.GlyphCircle("", Ui.ClaudeDim, 46, 1);
         icon.Child = Icons.Claude(26);
         var check = new Border
         {
@@ -151,7 +151,7 @@ public sealed class ClaudeActivity : Activity
 
     private void ShowNeedsInput(string project, string message)
     {
-        var icon = Ui.GlyphCircle("", Ui.Brush("#2A1A14"), 46, 1);
+        var icon = Ui.GlyphCircle("", Ui.ClaudeDim, 46, 1);
         icon.Child = Icons.Claude(26);
         var dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(6), Background = Ui.Amber, Margin = new Thickness(0, 0, 6, 0) };
         _manager.ShowAlert(new IslandAlert

@@ -79,8 +79,8 @@ public sealed class StopwatchActivity : Activity
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var pause = Ui.CircleButton(_pauseIcon, Ui.Brush("#4A4010"), 50, TogglePause, L.T("Pause / resume"));
-        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Stop, L.T("Stop"));
+        var pause = Ui.CircleButton(_pauseIcon, Ui.AmberDim, 50, TogglePause, L.T("Pause / resume"));
+        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.Primary, 2.4), Ui.Track, 50, Stop, L.T("Stop"));
         stop.Margin = new Thickness(12, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);

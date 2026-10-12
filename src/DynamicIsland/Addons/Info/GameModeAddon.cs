@@ -41,6 +41,25 @@ public sealed class GameModeAddon : Addon
     public override string Name => "Game mode";
     protected override bool IsEnabled(AddonSettings o) => o.GameMode;
 
+    /// <summary>The game view with sample numbers for a few seconds (unless a real game shows it meanwhile).</summary>
+    public override void Preview()
+    {
+        if (_gameTicks >= 2) return; // the real thing is on screen
+        _compact.Text = "GPU 72% · 64°";
+        _gpu.Text = "72%";
+        _temp.Text = "64°C";
+        _cpuText.Text = "35%";
+        _ram.Text = "58%";
+        _activity.Show();
+        var done = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+        done.Tick += (_, _) =>
+        {
+            done.Stop();
+            if (_gameTicks < 2) _activity.Hide();
+        };
+        done.Start();
+    }
+
     protected override void Start()
     {
         _cpu.Read();
@@ -89,7 +108,7 @@ public sealed class GameModeAddon : Addon
         _activity.Hide();
     }
 
-    private static TextBlock Stat() => Ui.Text("–", 22, FontWeights.Light, Ui.White, tabular: true);
+    private static TextBlock Stat() => Ui.Text("–", 22, FontWeights.Light, Ui.Primary, tabular: true);
 
     private static void AddStat(Grid grid, int column, string label, TextBlock value)
     {

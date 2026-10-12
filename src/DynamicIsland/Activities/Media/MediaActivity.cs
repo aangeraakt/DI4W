@@ -25,12 +25,12 @@ public sealed class MediaActivity : Activity
     private readonly Border _expandedArt = Ui.Image(null, 62, 14);
     private readonly WaveformView _compactWave = new(20, 14);
     private readonly WaveformView _expandedWave = new(24, 18);
-    private readonly TextBlock _title = Ui.Text("", 17, FontWeights.SemiBold, Ui.White);
+    private readonly TextBlock _title = Ui.Text("", 17, FontWeights.SemiBold, Ui.Primary);
     private readonly TextBlock _artist = Ui.Text("", 15, FontWeights.Normal, Ui.Grey);
     private readonly TextBlock _elapsed = Ui.Text("0:00", 12, FontWeights.Medium, Ui.Grey, tabular: true);
     private readonly TextBlock _remaining = Ui.Text("-0:00", 12, FontWeights.Medium, Ui.Grey, tabular: true);
     private readonly Border _progressTrack = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Track, Cursor = Cursors.Hand };
-    private readonly Border _progressFill = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.White, HorizontalAlignment = HorizontalAlignment.Left };
+    private readonly Border _progressFill = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Primary, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ContentControl _playPauseIcon = new();
 
     public MediaActivity(MediaService service, AppSettings settings)
@@ -85,7 +85,7 @@ public sealed class MediaActivity : Activity
         _expandedWave.SetColor(s.Accent);
         _title.Text = s.Title;
         _artist.Text = s.Artist;
-        _playPauseIcon.Content = Ui.Shape(s.IsPlaying ? Icons.Pause : Icons.Play, 26, Ui.White);
+        _playPauseIcon.Content = Ui.Shape(s.IsPlaying ? Icons.Pause : Icons.Play, 26, Ui.Primary);
 
         WaveformView.SetPlaying(s.IsPlaying);
         UpdateProgress();
@@ -191,11 +191,11 @@ public sealed class MediaActivity : Activity
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 6, 0, 0),
         };
-        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Previous, 30, Ui.White), () => _ = _service.Previous(), null, 54, 46, L.T("Previous")));
+        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Previous, 30, Ui.Primary), () => _ = _service.Previous(), null, 54, 46, L.T("Previous")));
         var pp = Ui.Button(_playPauseIcon, () => _ = _service.TogglePlayPause(), null, 54, 46, L.T("Play / pause"));
         pp.Margin = new Thickness(28, 0, 28, 0);
         controls.Children.Add(pp);
-        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Next, 30, Ui.White), () => _ = _service.Next(), null, 54, 46, L.T("Next")));
+        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Next, 30, Ui.Primary), () => _ = _service.Next(), null, 54, 46, L.T("Next")));
         Grid.SetRow(controls, 2);
         root.Children.Add(controls);
 

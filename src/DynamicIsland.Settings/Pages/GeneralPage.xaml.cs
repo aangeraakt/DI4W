@@ -34,6 +34,7 @@ public sealed partial class GeneralPage : Page
         SizeBox.SelectedItem = SizeBox.Items.Cast<ComboBoxItem>()
             .OrderBy(i => Math.Abs(double.Parse((string)i.Tag, CultureInfo.InvariantCulture) - s.Scale))
             .First();
+        ThemeBox.SelectedItem = ThemeBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == s.Theme) ?? ThemeBox.Items[0];
         TopOffset.Value = s.TopOffset;
         TopOffsetLabel.Text = $"{s.TopOffset:0} px";
         FillDisplays(s.Monitor);
@@ -41,6 +42,7 @@ public sealed partial class GeneralPage : Page
                                    ?? LanguageBox.Items[0];
 
         _loading = false;
+        UpdatePreview();
     }
 
     private void OnStartIsland(object sender, RoutedEventArgs e)
@@ -69,6 +71,7 @@ public sealed partial class GeneralPage : Page
     {
         if (_loading || SizeBox.SelectedItem is not ComboBoxItem { Tag: string tag }) return;
         SettingsStore.Change(s => s.Scale = double.Parse(tag, CultureInfo.InvariantCulture));
+        UpdatePreview();
     }
 
     /// <summary>Main display, the display with the mouse, then each connected display.</summary>
@@ -94,6 +97,19 @@ public sealed partial class GeneralPage : Page
         App.Restart("General");                        // and so does this window, so every text is redrawn
     }
 
+    private void OnTheme(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading || ThemeBox.SelectedItem is not ComboBoxItem { Tag: string value }) return;
+        SettingsStore.Change(s => s.Theme = value); // the island restarts itself in the new colors
+        UpdatePreview();
+    }
+
+    private void UpdatePreview()
+    {
+        var s = SettingsStore.Current;
+        Preview.Update(s.Scale, s.TopOffset, IslandTheme.IsLight(s.Theme));
+    }
+
     private void OnDisplay(object sender, SelectionChangedEventArgs e)
     {
         if (_loading || DisplayBox.SelectedItem is not ComboBoxItem { Tag: string value }) return;
@@ -103,6 +119,8 @@ public sealed partial class GeneralPage : Page
     private void OnTopOffset(object sender, RangeBaseValueChangedEventArgs e)
     {
         if (TopOffsetLabel is not null) TopOffsetLabel.Text = $"{e.NewValue:0} px";
-        if (!_loading) SettingsStore.Change(s => s.TopOffset = e.NewValue);
+        if (_loading) return;
+        SettingsStore.Change(s => s.TopOffset = e.NewValue);
+        UpdatePreview();
     }
 }

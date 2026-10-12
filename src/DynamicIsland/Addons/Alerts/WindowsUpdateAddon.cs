@@ -48,13 +48,20 @@ public sealed class WindowsUpdateAddon : Addon
     {
         if (_restarting || DateTime.UtcNow < _snoozedUntil || !RestartPending()) return;
         _snoozedUntil = DateTime.UtcNow.AddHours(4); // until the user picks, don't ask again soon
+        Prompt(Restart);
+    }
 
+    /// <summary>The sample from the settings app has the same buttons, but Restart only closes it.</summary>
+    public override void Preview() => Prompt(() => { });
+
+    private void Prompt(Action onRestart)
+    {
         IslandAlert? alert = null;
-        var later = Ui.Button(Ui.Text(L.T("Later"), 13, FontWeights.SemiBold, Ui.White), () => Context.Manager.DismissAlert(alert), Ui.ButtonBg, 64, 32);
+        var later = Ui.Button(Ui.Text(L.T("Later"), 13, FontWeights.SemiBold, Ui.Primary), () => Context.Manager.DismissAlert(alert), Ui.ButtonBg, 64, 32);
         var restart = Ui.Button(Ui.Text(L.T("Restart"), 13, FontWeights.SemiBold, System.Windows.Media.Brushes.Black), () =>
         {
             Context.Manager.DismissAlert(alert);
-            Restart();
+            onRestart();
         }, Ui.Blue, 76, 32);
         later.Padding = restart.Padding = new Thickness(0);
         restart.Margin = new Thickness(8, 0, 0, 0);
@@ -76,7 +83,7 @@ public sealed class WindowsUpdateAddon : Addon
         Run("shutdown.exe", $"/r /t 60 /c \"{L.T("Restarting to finish Windows updates")}\"");
 
         IslandAlert? countdown = null;
-        var cancel = Ui.Button(Ui.Text(L.T("Cancel"), 13, FontWeights.SemiBold, Ui.White), () =>
+        var cancel = Ui.Button(Ui.Text(L.T("Cancel"), 13, FontWeights.SemiBold, Ui.Primary), () =>
         {
             Run("shutdown.exe", "/a");
             _restarting = false;

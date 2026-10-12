@@ -137,6 +137,12 @@ public sealed partial class CalendarAddon : Addon
         }
     }
 
+    public override void Preview()
+    {
+        var now = DateTime.UtcNow;
+        Announce(new Meeting("preview", L.T("Team meeting"), now.AddMinutes(5), now.AddMinutes(35), null, null), now);
+    }
+
     private void Announce(Meeting m, DateTime now)
     {
         var minutes = (int)Math.Ceiling((m.Start - now).TotalMinutes);

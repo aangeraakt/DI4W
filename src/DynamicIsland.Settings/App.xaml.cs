@@ -11,6 +11,8 @@ public partial class App : Application
     private Mutex? _singleInstance;
     private MainWindow? _window;
 
+    public static MainWindow? MainWindow => ((App)Current)._window;
+
     public App()
     {
         InitializeComponent();
@@ -49,7 +51,7 @@ public partial class App : Application
             // Not available in every setup; our own text is translated regardless.
         }
 
-        _window = new MainWindow(page);
+        _window = new MainWindow(page, welcome: cmd.Contains("--welcome"));
         _window.Activate();
     }
 

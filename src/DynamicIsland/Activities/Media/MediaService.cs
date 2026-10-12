@@ -4,6 +4,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using DynamicIsland.Core;
 using DynamicIsland.Settings;
+using DynamicIsland.UI;
 using Windows.Media.Control;
 using GsmtcManager = Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager;
 using GsmtcSession = Windows.Media.Control.GlobalSystemMediaTransportControlsSession;
@@ -45,7 +46,7 @@ public sealed class MediaService
     private GsmtcSession? _session;
     private string? _artKey;
     private BitmapSource? _art;
-    private Color _accent = Colors.White;
+    private Color _accent = Ui.Primary.Color;
     private bool _refreshQueued;
 
     public event Action<MediaSnapshot?>? Updated;
@@ -177,7 +178,7 @@ public sealed class MediaService
             {
                 _artKey = key;
                 _art = await LoadArt(props.Thumbnail);
-                _accent = _art is null ? Colors.White : DominantColor(_art);
+                _accent = _art is null ? Ui.Primary.Color : DominantColor(_art);
             }
 
             var playing = playback?.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
@@ -288,7 +289,7 @@ public sealed class MediaService
         }
         catch
         {
-            return Colors.White;
+            return Ui.Primary.Color;
         }
     }
 }

@@ -10,7 +10,7 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
 {
     private const string Speaker = "", Muted = "";
 
-    private readonly HudView _hud = new(Speaker, Ui.White);
+    private readonly HudView _hud = new(Speaker, Ui.Primary);
     private MMDeviceEnumerator? _enumerator;
     private MMDevice? _device;
     private DateTime _quietUntil;
@@ -20,6 +20,12 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
     public override string Key => nameof(AddonSettings.Volume);
     public override string Name => "Volume";
     protected override bool IsEnabled(AddonSettings o) => o.Volume;
+
+    public override void Preview()
+    {
+        _hud.Set(0.6, "60", Speaker);
+        Show(_hud.Alert);
+    }
 
     protected override void Start()
     {

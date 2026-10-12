@@ -59,6 +59,22 @@
 
             <TextBlock Text="Appearance" Style="{StaticResource SectionHeader}" />
 
+            <tk:SettingsCard Header="Preview" Description="How the island looks with the options below."
+                             ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                <controls:IslandPreview x:Name="Preview" MaxWidth="560" HorizontalAlignment="Stretch" />
+            </tk:SettingsCard>
+
+            <tk:SettingsCard Header="Theme" Description="Black like the iPhone, light, or matching Windows. The island restarts to switch.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE790;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ComboBox x:Name="ThemeBox" MinWidth="200" SelectionChanged="OnTheme">
+                    <ComboBoxItem Content="Dark" Tag="" />
+                    <ComboBoxItem Content="Light" Tag="Light" />
+                    <ComboBoxItem Content="Match Windows" Tag="System" />
+                </ComboBox>
+            </tk:SettingsCard>
+
             <tk:SettingsCard Header="Size" Description="How big the island is.">
                 <tk:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE71E;" />

@@ -13,6 +13,7 @@ using DynamicIsland.Animation;
 using DynamicIsland.Core;
 using DynamicIsland.Interop;
 using DynamicIsland.Settings;
+using DynamicIsland.UI;
 using Microsoft.Win32;
 
 namespace DynamicIsland;
@@ -84,6 +85,16 @@ public partial class IslandWindow : Window
         InitializeComponent();
 
         _driver = new SpringDriver(ApplyFrame, _width, _height, _radius, _bubble, _hover);
+
+        Pill.Background = Bubble.Background = Ui.PillBackground;
+        if (Palette.Light)
+        {
+            // A hairline edge and the pill's own color under the shadow, so a light pill doesn't melt into white pages.
+            Shadow.Background = Ui.PillBackground;
+            Shadow.Opacity = 0.35;
+            Pill.BorderBrush = Bubble.BorderBrush = Ui.Brush("#22000000");
+            Pill.BorderThickness = Bubble.BorderThickness = new Thickness(1);
+        }
 
         ApplyScale();
         ApplyFrame();

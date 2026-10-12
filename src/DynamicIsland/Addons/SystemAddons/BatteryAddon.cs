@@ -18,6 +18,8 @@ public sealed class BatteryAddon : Addon
     public override string Name => "Battery";
     protected override bool IsEnabled(AddonSettings o) => o.Battery;
 
+    public override void Preview() => Announce(L.T("Charging"), "82%", 82, Ui.Green, charging: true);
+
     protected override void Start()
     {
         if (PowerManager.BatteryStatus == BatteryStatus.NotPresent)
@@ -56,7 +58,7 @@ public sealed class BatteryAddon : Addon
             var estimate = left > TimeSpan.FromMinutes(1) && left < TimeSpan.FromDays(1)
                 ? left.TotalHours >= 1 ? L.F(" · {0} h {1} min left", (int)left.TotalHours, left.Minutes) : L.F(" · {0} min left", left.Minutes)
                 : "";
-            Announce(L.T("On battery"), $"{percent}%{estimate}", percent, percent <= Options.BatteryLowPercent ? Ui.Red : Ui.White, charging: false);
+            Announce(L.T("On battery"), $"{percent}%{estimate}", percent, percent <= Options.BatteryLowPercent ? Ui.Red : Ui.Primary, charging: false);
         }
     });
 
@@ -87,7 +89,7 @@ public sealed class BatteryAddon : Addon
         };
         Show(new IslandAlert
         {
-            Content = Ui.AlertView(icon, title, subtitle, color == Ui.White ? null : color),
+            Content = Ui.AlertView(icon, title, subtitle, color == Ui.Primary ? null : color),
             Size = new Size(360, 76),
             Duration = TimeSpan.FromSeconds(urgent ? 8 : 3.5),
             StickyUntilHover = urgent,

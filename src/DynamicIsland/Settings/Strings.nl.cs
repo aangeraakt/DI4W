@@ -360,5 +360,72 @@ public static partial class L
         ["Report (you can change anything)"] = "Rapport (je kunt alles aanpassen)",
         ["Open on GitHub"] = "Openen op GitHub",
         ["Copy"] = "Kopiëren",
+
+        // ───────────── tray menu ─────────────
+        ["Open settings"] = "Instellingen openen",
+        ["Show island"] = "Eiland tonen",
+        ["Hide island"] = "Eiland verbergen",
+        ["Dynamic Island is hidden. Click to show it."] = "Dynamic Island is verborgen. Klik om het te tonen.",
+
+        // ───────────── previews ─────────────
+        ["Preview"] = "Voorbeeld",
+        ["Show a sample in the island"] = "Een voorbeeld in het eiland tonen",
+        ["Headphones"] = "Koptelefoon",
+        ["USB drive"] = "USB-stick",
+        ["Team meeting"] = "Teamoverleg",
+        ["A preview of the text you copy shows up here"] = "Hier zie je een voorbeeld van de tekst die je kopieert",
+        ["Screenshot"] = "Schermafbeelding",
+        ["report"] = "rapport",
+        ["The island isn't running"] = "Het eiland is niet gestart",
+        ["Start it to see previews."] = "Start het om voorbeelden te zien.",
+        ["The island is hidden"] = "Het eiland is verborgen",
+        ["Show it again to see the preview."] = "Toon het weer om het voorbeeld te zien.",
+        ["The island didn't respond"] = "Het eiland reageerde niet",
+        ["Try again in a moment, or restart it from the tray icon."] = "Probeer het zo nog eens, of start het opnieuw via het pictogram in het systeemvak.",
+
+        // ───────────── add-ons page: search ─────────────
+        ["Extra things the island can show. Changes apply right away; Preview shows a sample in the island."] =
+            "Extra dingen die het eiland kan tonen. Wijzigingen werken meteen; Voorbeeld toont een voorbeeld in het eiland.",
+        ["Search add-ons"] = "Add-ons zoeken",
+        ["All add-ons"] = "Alle add-ons",
+        ["Turned on"] = "Aan",
+        ["Turned off"] = "Uit",
+        ["{0} of {1} add-ons are on"] = "{0} van de {1} add-ons staan aan",
+        ["No add-ons match your search."] = "Geen add-ons gevonden.",
+
+        // ───────────── appearance ─────────────
+        ["Preview of the island"] = "Voorbeeld van het eiland",
+        ["How the island looks with the options below."] = "Zo ziet het eiland eruit met de opties hieronder.",
+        ["Theme"] = "Thema",
+        ["Black like the iPhone, light, or matching Windows. The island restarts to switch."] =
+            "Zwart zoals op de iPhone, licht, of zoals Windows. Het eiland start opnieuw om te wisselen.",
+        ["Dark"] = "Donker",
+        ["Light"] = "Licht",
+        ["Match Windows"] = "Zoals Windows",
+
+        // ───────────── welcome tour ─────────────
+        ["Welcome tour"] = "Rondleiding",
+        ["What the island does, its shortcuts, and which add-ons to use."] = "Wat het eiland doet, de sneltoetsen en welke add-ons je gebruikt.",
+        ["Show the tour"] = "Rondleiding tonen",
+        ["Welcome to Dynamic Island"] = "Welkom bij Dynamic Island",
+        ["Two shortcuts to remember"] = "Twee sneltoetsen om te onthouden",
+        ["Pick what pops up"] = "Kies wat er verschijnt",
+        ["Get started"] = "Aan de slag",
+        ["Back"] = "Terug",
+        ["Skip"] = "Overslaan",
+        ["The island at the top of your screen shows what's going on, like on an iPhone: music, timers, Claude Code, messages from your chat apps and more."] =
+            "Het eiland boven aan je scherm laat zien wat er gebeurt, net als op een iPhone: muziek, timers, Claude Code, berichten uit je chat-apps en meer.",
+        ["Point at it to see more, and click it to open it."] = "Wijs het aan om meer te zien en klik erop om het te openen.",
+        ["Click the empty island to start a timer, focus session or stopwatch."] = "Klik op het lege eiland om een timer, focussessie of stopwatch te starten.",
+        ["Right-click it for the menu. The tray icon has the same menu."] = "Klik met rechts voor het menu. Het pictogram in het systeemvak heeft hetzelfde menu.",
+        ["They work from any app."] = "Ze werken vanuit elke app.",
+        ["Hide the island, and bring it back"] = "Het eiland verbergen, en weer terughalen",
+        ["Open what the island shows, without the mouse (screen readers read it out)"] = "Openen wat het eiland toont, zonder muis (schermlezers lezen het voor)",
+        ["Change them under General."] = "Je wijzigt ze onder Algemeen.",
+        ["Not set"] = "Niet ingesteld",
+        ["Turn on what you'd like to see. Calendar and weather need a link or a city, under Add-ons."] =
+            "Zet aan wat je wilt zien. Agenda en weer hebben een link of een plaats nodig, onder Add-ons.",
+        ["Start Dynamic Island with Windows"] = "Dynamic Island starten met Windows",
+        ["There's more under Add-ons, each with a Preview button."] = "Onder Add-ons vind je er meer, elk met een knop Voorbeeld.",
     };
 }

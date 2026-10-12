@@ -22,7 +22,7 @@ public sealed class WeatherAddon : Addon
     private static readonly FontFamily Symbols = new("Segoe UI Symbol");
 
     private readonly TextBlock _icon = new() { FontFamily = Symbols, FontSize = 14, VerticalAlignment = VerticalAlignment.Center };
-    private readonly TextBlock _temp = Ui.Text("", 14, FontWeights.SemiBold, Ui.White, tabular: true);
+    private readonly TextBlock _temp = Ui.Text("", 14, FontWeights.SemiBold, Ui.Primary, tabular: true);
     private readonly StackPanel _view;
     private DispatcherTimer? _refresh;
     private (string Query, double Lat, double Lon, string Place)? _location;
@@ -120,16 +120,21 @@ public sealed class WeatherAddon : Addon
         if (first < 0) return;
 
         _lastRainAlert = DateTime.UtcNow;
-        Show(new IslandAlert
-        {
-            Content = Ui.AlertView(new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(23), Background = Ui.Blue,
-                                                Child = new TextBlock { Text = "☂", FontFamily = Symbols, FontSize = 22, Foreground = Ui.White,
-                                                                        HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
-                                   L.F("Rain in about {0} min", (first + 1) * 15), place),
-            Size = new Size(360, 76),
-            Duration = TimeSpan.FromSeconds(6),
-        });
+        RainAlert((first + 1) * 15, place);
     }
+
+    public override void Preview() =>
+        RainAlert(15, Options.WeatherLocation.Trim() is { Length: > 0 } city ? city : _location?.Place ?? "Amsterdam");
+
+    private void RainAlert(int minutes, string place) => Show(new IslandAlert
+    {
+        Content = Ui.AlertView(new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(23), Background = Ui.Blue,
+                                            Child = new TextBlock { Text = "☂", FontFamily = Symbols, FontSize = 22, Foreground = Ui.OnColor,
+                                                                    HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
+                               L.F("Rain in about {0} min", minutes), place),
+        Size = new Size(360, 76),
+        Duration = TimeSpan.FromSeconds(6),
+    });
 
     private async Task<(double Lat, double Lon, string Place)?> Locate()
     {
@@ -175,7 +180,7 @@ public sealed class WeatherAddon : Addon
         3 => ("☁", Ui.Grey, L.T("Cloudy")),
         45 or 48 => ("☁", Ui.Grey, L.T("Fog")),
         >= 51 and <= 67 or >= 80 and <= 82 => ("☂", Ui.Blue, L.T("Rain")),
-        >= 71 and <= 77 or 85 or 86 => ("❄", Ui.White, L.T("Snow")),
+        >= 71 and <= 77 or 85 or 86 => ("❄", Ui.Primary, L.T("Snow")),
         >= 95 => ("⛈", Ui.Amber, L.T("Thunderstorm")),
         _ => ("☁", Ui.Grey, L.T("Cloudy")),
     };

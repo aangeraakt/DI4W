@@ -4,10 +4,35 @@
 
     <!-- The cards are built in code from one list (see AddonsPage.xaml.cs), so every add-on looks the same. -->
     <ScrollViewer>
-        <StackPanel x:Name="Root" Style="{StaticResource PageStack}">
+        <StackPanel Style="{StaticResource PageStack}">
             <TextBlock Text="Add-ons" Style="{StaticResource PageTitle}" Margin="0,28,0,4" />
-            <TextBlock Text="Extra things the island can show. Changes apply right away."
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,8" />
+            <TextBlock Text="Extra things the island can show. Changes apply right away; Preview shows a sample in the island."
+                       TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,0,0,12" />
+
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <AutoSuggestBox x:Name="Search" QueryIcon="Find" TextChanged="OnSearch" MaxWidth="420" HorizontalAlignment="Stretch" />
+                <ComboBox x:Name="Filter" Grid.Column="1" MinWidth="150" SelectedIndex="0" SelectionChanged="OnFilter">
+                    <ComboBoxItem Content="All add-ons" />
+                    <ComboBoxItem Content="Turned on" />
+                    <ComboBoxItem Content="Turned off" />
+                </ComboBox>
+            </Grid>
+            <TextBlock x:Name="Summary" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Margin="2,6,0,0" />
+
+            <InfoBar x:Name="PreviewInfo" Severity="Informational" IsClosable="True" Margin="0,8,0,0">
+                <InfoBar.ActionButton>
+                    <Button x:Name="PreviewAction" />
+                </InfoBar.ActionButton>
+            </InfoBar>
+
+            <TextBlock x:Name="NoMatches" Text="No add-ons match your search." Visibility="Collapsed"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,24,0,0" />
+
+            <StackPanel x:Name="Root" Spacing="4" />
         </StackPanel>
     </ScrollViewer>
 </Page>

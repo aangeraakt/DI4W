@@ -23,6 +23,9 @@ public sealed class AppSettings
     /// <summary>Overall size multiplier (1.0 = default).</summary>
     public double Scale { get; set; } = 1.0;
 
+    /// <summary>"" = dark (black pill), "Light", or "System" to follow Windows. See <see cref="IslandTheme"/>.</summary>
+    public string Theme { get; set; } = IslandTheme.Dark;
+
     public bool HideInFullscreen { get; set; } = true;
 
     public bool MediaEnabled { get; set; } = true;

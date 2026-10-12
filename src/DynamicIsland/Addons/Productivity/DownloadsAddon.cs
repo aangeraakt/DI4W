@@ -145,7 +145,7 @@ public sealed class DownloadsAddon : Addon
             var row = new Grid { Margin = new Thickness(0, 6, 0, 0) };
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            row.Children.Add(Ui.Text(DisplayName(d.Path), 14, FontWeights.Normal, Ui.White));
+            row.Children.Add(Ui.Text(DisplayName(d.Path), 14, FontWeights.Normal, Ui.Primary));
             var detail = Ui.Text($"{UsbDriveAddon.FormatSize(d.Size)}{(d.Speed > 0 ? $" · {UsbDriveAddon.FormatSize((long)d.Speed)}/s" : "")}",
                                  13, FontWeights.Normal, Ui.Grey, tabular: true);
             detail.Margin = new Thickness(12, 0, 0, 0);
@@ -179,6 +179,14 @@ public sealed class DownloadsAddon : Addon
             OnClick = () => Process.Start("explorer.exe", $"/select,\"{path}\""),
         });
     }
+
+    public override void Preview() => Show(new IslandAlert
+    {
+        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Download complete"),
+                               $"{L.T("report")}.pdf · {UsbDriveAddon.FormatSize(2_400_000)}"),
+        Size = new Size(380, 76),
+        Duration = TimeSpan.FromSeconds(4),
+    });
 
     // "photo.jpg.crdownload" -> "photo.jpg"; Chrome's placeholder "Unconfirmed 1234" -> "New download"
     internal static string DisplayName(string path)

@@ -14,11 +14,13 @@ namespace DynamicIsland.Addons;
 public sealed class AddonHost
 {
     private readonly List<Addon> _addons;
+    private readonly AddonContext _context;
     private readonly DispatcherTimer _writeStatus;
     private string? _notificationAccess;
 
     public AddonHost(AddonContext context)
     {
+        _context = context;
         _addons = new List<Addon>
         {
             new VolumeAddon(context),
@@ -59,6 +61,28 @@ public sealed class AddonHost
     }
 
     public void Shutdown() => _addons.ForEach(a => a.Shutdown());
+
+    /// <summary>A sample pop-up for the add-on with this key; shown even during Do Not Disturb, since it was asked for.</summary>
+    public void Preview(string key)
+    {
+        var addon = _addons.FirstOrDefault(a => a.Key == key);
+        if (addon is null) return;
+        var manager = _context.Manager;
+        var quiet = manager.Quiet;
+        manager.Quiet = false;
+        try
+        {
+            addon.Preview();
+        }
+        catch (Exception ex)
+        {
+            Core.Log.Error($"Preview of {addon.Name} failed", ex);
+        }
+        finally
+        {
+            manager.Quiet = quiet;
+        }
+    }
 
     /// <summary>Windows notification access, shown on the Notifications page when it isn't allowed.</summary>
     public void SetNotificationAccess(string access)

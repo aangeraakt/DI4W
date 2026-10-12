@@ -24,6 +24,9 @@ public sealed class UsbDriveAddon : Addon
     public override string Name => "USB drives";
     protected override bool IsEnabled(AddonSettings o) => o.UsbDrives;
 
+    public override void Preview() =>
+        Announce(L.T("USB drive"), L.F("Connected ({0}:)", 'E') + $" · {FormatSize(64L * 1024 * 1024 * 1024)}", connected: true, null);
+
     protected override void Start()
     {
         foreach (var d in DriveInfo.GetDrives()) Remember(d);

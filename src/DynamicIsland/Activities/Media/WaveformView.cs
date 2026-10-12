@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
 using DynamicIsland.Core;
+using DynamicIsland.UI;
 
 namespace DynamicIsland.Activities.Media;
 
@@ -18,7 +19,7 @@ public sealed class WaveformView : FrameworkElement
     private static readonly int[] Order = { 3, 1, 0, 2, 4, 5 };
 
     private readonly double[] _shown = new double[AudioLevelMeter.BandCount];
-    private Brush _brush = Brushes.White;
+    private Brush _brush = Ui.Primary;
 
     static WaveformView()
     {

@@ -6,21 +6,40 @@ using System.Windows.Shapes;
 
 namespace DynamicIsland.UI;
 
+/// <summary>
+/// Whether the island is light (set once at startup, before any view is built; switching restarts the island,
+/// because views are built once and reused).
+/// </summary>
+public static class Palette
+{
+    public static bool Light { get; set; }
+}
+
 /// <summary>Small factory helpers so every view uses the same iOS-like typography, colors and controls.</summary>
 public static class Ui
 {
     public static readonly FontFamily Font = new("SF Pro Display, Segoe UI Variable Display, Segoe UI");
     public static readonly FontFamily IconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
-    public static readonly SolidColorBrush White = Freeze(new SolidColorBrush(Colors.White));
-    public static readonly SolidColorBrush Grey = Brush("#8E8E93");
+    /// <summary>The pill itself: black, or iOS' light grey-white.</summary>
+    public static readonly SolidColorBrush PillBackground = Themed("#000000", "#F5F5F7");
+
+    /// <summary>Main text and icons on the pill: white on the dark island, near-black on the light one.</summary>
+    public static readonly SolidColorBrush Primary = Themed("#FFFFFF", "#1C1C1E");
+
+    /// <summary>Icons on a colored circle or button (always white).</summary>
+    public static readonly SolidColorBrush OnColor = Freeze(new SolidColorBrush(Colors.White));
+
+    public static readonly SolidColorBrush Grey = Themed("#8E8E93", "#6C6C70");
     public static readonly SolidColorBrush Orange = Brush("#FF9F0A");
-    public static readonly SolidColorBrush OrangeDim = Brush("#4A3410");
+    public static readonly SolidColorBrush OrangeDim = Themed("#4A3410", "#FFE2B8");
+    public static readonly SolidColorBrush AmberDim = Themed("#4A4010", "#FFF1B0");
+    public static readonly SolidColorBrush ClaudeDim = Themed("#2A1A14", "#F6DDD3");
     public static readonly SolidColorBrush Green = Brush("#30D158");
     public static readonly SolidColorBrush Amber = Brush("#FFD60A");
     public static readonly SolidColorBrush ClaudeOrange = Brush("#D97757");
-    public static readonly SolidColorBrush Track = Brush("#3A3A3C");
-    public static readonly SolidColorBrush ButtonBg = Brush("#2C2C2E");
+    public static readonly SolidColorBrush Track = Themed("#3A3A3C", "#D1D1D6");
+    public static readonly SolidColorBrush ButtonBg = Themed("#2C2C2E", "#E5E5EA");
     public static readonly SolidColorBrush DiscordBlurple = Brush("#5865F2");
     public static readonly SolidColorBrush Blue = Brush("#0A84FF");
     public static readonly SolidColorBrush Red = Brush("#FF453A");
@@ -30,6 +49,8 @@ public static class Ui
 
     public static SolidColorBrush Brush(string hex) =>
         Freeze(new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)));
+
+    private static SolidColorBrush Themed(string dark, string light) => Brush(Palette.Light ? light : dark);
 
     private static T Freeze<T>(T f) where T : Freezable
     {
@@ -137,7 +158,7 @@ public static class Ui
         grid.Children.Add(iconHost);
 
         var stack = new StackPanel { Margin = new Thickness(12, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center };
-        stack.Children.Add(Text(title, 15, FontWeights.SemiBold, titleBrush ?? White));
+        stack.Children.Add(Text(title, 15, FontWeights.SemiBold, titleBrush ?? Primary));
         if (!string.IsNullOrWhiteSpace(subtitle))
         {
             var sub = Text(subtitle, 13.5, FontWeights.Normal, Grey);
@@ -158,14 +179,15 @@ public static class Ui
         return grid;
     }
 
-    /// <summary>A filled circle with a glyph in the middle (fallback app icon).</summary>
+    /// <summary>A filled circle with a glyph in the middle (fallback app icon). White glyph on a color; on the
+    /// neutral grey the glyph follows the theme.</summary>
     public static Border GlyphCircle(string glyph, Brush background, double size, double glyphSize) => new()
     {
         Width = size,
         Height = size,
         CornerRadius = new CornerRadius(size / 2),
         Background = background,
-        Child = Glyph(glyph, glyphSize, White),
+        Child = Glyph(glyph, glyphSize, background == ButtonBg || background == Track ? Primary : OnColor),
     };
 
     public static string FormatTime(TimeSpan t)
@@ -244,7 +266,7 @@ public static class Icons
         {
             grid.Children.Add(new Path
             {
-                Data = Bolt, Fill = Ui.White, Stroke = Brushes.Black, StrokeThickness = 0.8,
+                Data = Bolt, Fill = Ui.OnColor, Stroke = Brushes.Black, StrokeThickness = 0.8,
                 Stretch = Stretch.Uniform, Height = height * 0.95, Margin = new Thickness(0, 0, 3, 0),
                 HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
             });

@@ -40,6 +40,8 @@ public sealed partial class AboutPage : Page
         UpdateStatus();
     }
 
+    private async void OnWelcome(object sender, RoutedEventArgs e) => await App.MainWindow!.ShowWelcomeAsync();
+
     private void OnOpenSettingsFile(object sender, RoutedEventArgs e) => SettingsStore.Open(AppSettings.FilePath);
 
     private void OnOpenLogs(object sender, RoutedEventArgs e)
@@ -68,6 +70,7 @@ public sealed partial class AboutPage : Page
         var dialog = new ContentDialog
         {
             XamlRoot = XamlRoot,
+            Style = (Style)Application.Current.Resources["DefaultContentDialogStyle"],
             Title = L.T("Report a problem"),
             Content = new StackPanel { Spacing = 12, Width = 560, Children = { title, body } },
             PrimaryButtonText = L.T("Open on GitHub"),

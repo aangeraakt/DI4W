@@ -23,6 +23,8 @@ public sealed class NetworkAddon : Addon
     public override string Name => "Network";
     protected override bool IsEnabled(AddonSettings o) => o.Network;
 
+    public override void Preview() => Announce(L.T("Back online"), "Wi-Fi", Wifi, Ui.Green);
+
     protected override void Start()
     {
         _last = Read();

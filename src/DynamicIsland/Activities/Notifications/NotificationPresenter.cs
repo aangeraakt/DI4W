@@ -52,8 +52,8 @@ public sealed partial class NotificationPresenter
         var caller = CallPattern().IsMatch(n.Title) && !string.IsNullOrWhiteSpace(n.Body) ? n.Body : n.Title;
         IslandAlert? alert = null;
 
-        var decline = Ui.CircleButton(Ui.Glyph("", 18, Ui.White), Ui.Red, 44, () => _manager.DismissAlert(alert), L.T("Decline"));
-        var answer = Ui.CircleButton(Ui.Glyph("", 18, Ui.White), Ui.Green, 44, () =>
+        var decline = Ui.CircleButton(Ui.Glyph("", 18, Ui.OnColor), Ui.Red, 44, () => _manager.DismissAlert(alert), L.T("Decline"));
+        var answer = Ui.CircleButton(Ui.Glyph("", 18, Ui.OnColor), Ui.Green, 44, () =>
         {
             open();
             _manager.DismissAlert(alert);

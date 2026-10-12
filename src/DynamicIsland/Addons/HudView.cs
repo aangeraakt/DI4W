@@ -21,7 +21,7 @@ public sealed class HudView
 
     public HudView(string glyph, Brush accent)
     {
-        _icon = Ui.Glyph(glyph, 16, Ui.White);
+        _icon = Ui.Glyph(glyph, 16, Ui.Primary);
         _icon.Width = 22;
         _fill = new Border { Height = 6, CornerRadius = new CornerRadius(3), Background = accent, HorizontalAlignment = HorizontalAlignment.Left };
         _track = new Border
@@ -29,7 +29,7 @@ public sealed class HudView
             Width = BarWidth, Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Track,
             VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 12, 0), Child = _fill,
         };
-        _value = Ui.Text("", 14, FontWeights.SemiBold, Ui.White, tabular: true);
+        _value = Ui.Text("", 14, FontWeights.SemiBold, Ui.Primary, tabular: true);
         _value.MinWidth = 40;
         _value.TextAlignment = TextAlignment.Right;
 

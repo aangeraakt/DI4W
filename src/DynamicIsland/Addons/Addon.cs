@@ -82,6 +82,12 @@ public abstract class Addon
     /// <summary>The settings changed while this add-on was running (e.g. a new weather city).</summary>
     protected virtual void OnOptionsChanged() { }
 
+    /// <summary>
+    /// Shows a sample of what this add-on pops up, with made-up data (the settings app's Preview button).
+    /// Works whether or not the add-on is on; buttons in a preview never do anything real.
+    /// </summary>
+    public abstract void Preview();
+
     /// <summary>Starts or stops the add-on to match its switch.</summary>
     public void Sync()
     {

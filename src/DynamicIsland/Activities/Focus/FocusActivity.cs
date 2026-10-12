@@ -188,8 +188,8 @@ public sealed class FocusActivity : Activity
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var pause = Ui.CircleButton(_pauseIcon, Ui.ButtonBg, 44, TogglePause, L.T("Pause / resume"));
-        var skip = Ui.CircleButton(Ui.Shape(Icons.Next, 14, Ui.White), Ui.ButtonBg, 44, Skip, L.T("Skip to next"));
-        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 12, Ui.White, 2.4), Ui.Track, 44, Stop, L.T("Stop"));
+        var skip = Ui.CircleButton(Ui.Shape(Icons.Next, 14, Ui.Primary), Ui.ButtonBg, 44, Skip, L.T("Skip to next"));
+        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 12, Ui.Primary, 2.4), Ui.Track, 44, Stop, L.T("Stop"));
         skip.Margin = stop.Margin = new Thickness(10, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(skip);

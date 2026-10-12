@@ -17,7 +17,7 @@ public sealed class LockKeysAddon : Addon
     private const uint RIDEV_INPUTSINK = 0x00000100, RIDEV_REMOVE = 0x00000001, RID_INPUT = 0x10000003;
     private const ushort RI_KEY_BREAK = 1;
 
-    private readonly HudView _hud = new("", Ui.White);
+    private readonly HudView _hud = new("", Ui.Primary);
     private bool _caps, _num;
 
     public LockKeysAddon(AddonContext context) : base(context) { }
@@ -25,6 +25,8 @@ public sealed class LockKeysAddon : Addon
     public override string Key => nameof(AddonSettings.LockKeys);
     public override string Name => "Lock keys";
     protected override bool IsEnabled(AddonSettings o) => o.LockKeys;
+
+    public override void Preview() => Announce("Caps Lock", true);
 
     protected override void Start()
     {

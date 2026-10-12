@@ -27,6 +27,16 @@ public sealed class ScreenshotAddon : Addon
     public override string Name => "Screenshots";
     protected override bool IsEnabled(AddonSettings o) => o.Screenshots;
 
+    /// <summary>The real pop-up shows the screenshot itself; the sample has a camera icon instead.</summary>
+    public override void Preview() => Show(new IslandAlert
+    {
+        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.ButtonBg, 46, 20), L.T("Screenshot saved"),
+                               $"{L.T("Screenshot")} {DateTime.Now:yyyy-MM-dd HHmmss}.png",
+                               accessory: Ui.CircleButton(Ui.Glyph("", 15, Ui.Primary), Ui.ButtonBg, 36, () => { }, L.T("Show in folder"))),
+        Size = new Size(380, 76),
+        Duration = TimeSpan.FromSeconds(4),
+    });
+
     protected override void Start()
     {
         var folder = KnownFolder(ScreenshotsFolder)
@@ -53,7 +63,7 @@ public sealed class ScreenshotAddon : Addon
         var thumbnail = await LoadThumbnail(path);
         if (thumbnail is null) return;
 
-        var folderButton = Ui.CircleButton(Ui.Glyph("", 15, Ui.White), Ui.ButtonBg, 36,
+        var folderButton = Ui.CircleButton(Ui.Glyph("", 15, Ui.Primary), Ui.ButtonBg, 36,
                                            () => Process.Start("explorer.exe", $"/select,\"{path}\""), L.T("Show in folder"));
         Show(new IslandAlert
         {

@@ -202,7 +202,7 @@ public sealed class TimerActivity : Activity
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         var pause = Ui.CircleButton(_pauseIcon, Ui.OrangeDim, 50, TogglePause, L.T("Pause / resume"));
-        var cancel = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Cancel, L.T("Cancel"));
+        var cancel = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.Primary, 2.4), Ui.Track, 50, Cancel, L.T("Cancel"));
         cancel.Margin = new Thickness(12, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(cancel);

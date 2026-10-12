@@ -34,7 +34,7 @@ public static class TimerPicker
         // Header: icon + title on the left, mode switch on the right.
         var header = new Grid();
         var icon = Ui.Glyph(modes[0].Glyph, 15, modes[0].Color);
-        var title = Ui.Text(modes[0].Name, 15, FontWeights.SemiBold, Ui.White);
+        var title = Ui.Text(modes[0].Name, 15, FontWeights.SemiBold, Ui.Primary);
         title.Margin = new Thickness(8, 0, 0, 0);
         header.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { icon, title } });
 
@@ -70,7 +70,7 @@ public static class TimerPicker
         static void Select(Button tab, bool selected)
         {
             tab.Background = selected ? Ui.Track : Brushes.Transparent;
-            ((TextBlock)tab.Content).Foreground = selected ? Ui.White : Ui.Grey;
+            ((TextBlock)tab.Content).Foreground = selected ? Ui.Primary : Ui.Grey;
         }
     }
 
@@ -81,7 +81,7 @@ public static class TimerPicker
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(Ui.Text(L.F("{0} min focus", o.FocusMinutes), 30, FontWeights.Light, Ui.White));
+        text.Children.Add(Ui.Text(L.F("{0} min focus", o.FocusMinutes), 30, FontWeights.Light, Ui.Primary));
         var detail = Ui.Text(L.F("then a {0} min break · every {1} break is {2} min", o.BreakMinutes, Ordinal(o.SessionsBeforeLongBreak), o.LongBreakMinutes),
                              13, FontWeights.Normal, Ui.Grey);
         detail.TextWrapping = TextWrapping.Wrap;
@@ -129,7 +129,7 @@ public static class TimerPicker
         var presets = new UniformGrid { Columns = PresetMinutes.Length, Margin = new Thickness(-3, 12, -3, 0) };
         foreach (var m in PresetMinutes)
         {
-            var chip = Ui.Button(Ui.Text(L.F("{0} min", m), 13, FontWeights.SemiBold, Ui.White),
+            var chip = Ui.Button(Ui.Text(L.F("{0} min", m), 13, FontWeights.SemiBold, Ui.Primary),
                                  () => start(TimeSpan.FromMinutes(m)), Ui.ButtonBg, double.NaN, 30);
             chip.Margin = new Thickness(3, 0, 3, 0);
             presets.Children.Add(chip);
@@ -143,8 +143,8 @@ public static class TimerPicker
         custom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         custom.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        var minText = Ui.Text("", 34, FontWeights.Light, Ui.White, tabular: true);
-        var secText = Ui.Text("", 34, FontWeights.Light, Ui.White, tabular: true);
+        var minText = Ui.Text("", 34, FontWeights.Light, Ui.Primary, tabular: true);
+        var secText = Ui.Text("", 34, FontWeights.Light, Ui.Primary, tabular: true);
         var colon = Ui.Text(":", 34, FontWeights.Light, Ui.Grey);
         colon.Margin = new Thickness(2, -4, 2, 0);
 
@@ -175,12 +175,12 @@ public static class TimerPicker
             if (seconds < 0) { seconds = minutes > 0 ? 55 : 0; if (minutes > 0) minutes--; }
         });
 
-        var minus = Ui.CircleButton(Ui.Text("−", 18, FontWeights.SemiBold, Ui.White), Ui.ButtonBg, 32, () =>
+        var minus = Ui.CircleButton(Ui.Text("−", 18, FontWeights.SemiBold, Ui.Primary), Ui.ButtonBg, 32, () =>
         {
             minutes = Math.Max(0, minutes - 1);
             Render();
         }, L.T("−1 min"));
-        var plus = Ui.CircleButton(Ui.Text("+", 18, FontWeights.SemiBold, Ui.White), Ui.ButtonBg, 32, () =>
+        var plus = Ui.CircleButton(Ui.Text("+", 18, FontWeights.SemiBold, Ui.Primary), Ui.ButtonBg, 32, () =>
         {
             minutes = Math.Min(180, minutes + 1);
             Render();

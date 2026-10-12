@@ -17,6 +17,13 @@
                 </StackPanel>
             </tk:SettingsCard>
 
+            <tk:SettingsCard Header="Welcome tour" Description="What the island does, its shortcuts, and which add-ons to use.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE789;" />
+                </tk:SettingsCard.HeaderIcon>
+                <Button Content="Show the tour" Click="OnWelcome" />
+            </tk:SettingsCard>
+
             <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" />
 
             <tk:SettingsCard x:Name="UpdateCard" Header="Check for updates" Description="Updates come from the releases on GitHub.">

@@ -34,6 +34,17 @@ public sealed class BluetoothAddon : Addon
     public override string Name => "Bluetooth";
     protected override bool IsEnabled(AddonSettings o) => o.Bluetooth;
 
+    public override void Preview()
+    {
+        var sample = new Device(L.T("Headphones"), true, true, new[] { "Audio" }, null, false);
+        Show(new IslandAlert
+        {
+            Content = Ui.AlertView(Ui.GlyphCircle(GlyphFor(sample), Ui.Blue, 46, 20), sample.Name, L.F("Connected · {0}% battery", 80)),
+            Size = new Size(360, 76),
+            Duration = TimeSpan.FromSeconds(3),
+        });
+    }
+
     protected override void Start()
     {
         _devices.Clear();

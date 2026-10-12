@@ -19,7 +19,7 @@ public sealed partial class FileCopyAddon : Addon
     private const double BarWidth = 336; // expanded width 380 minus margins
 
     private readonly TextBlock _percent = Ui.Text("", 14, FontWeights.SemiBold, Ui.Teal, tabular: true);
-    private readonly TextBlock _title = Ui.Text("", 15, FontWeights.SemiBold, Ui.White);
+    private readonly TextBlock _title = Ui.Text("", 15, FontWeights.SemiBold, Ui.Primary);
     private readonly Border _fill = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Teal, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly Border _track;
     private readonly AddonActivity _activity;
@@ -77,6 +77,8 @@ public sealed partial class FileCopyAddon : Addon
         _activity.Show();
         if (_poll is not null) _poll.Interval = TimeSpan.FromSeconds(1); // copying: keep the percentage live
     }
+
+    public override void Preview() => AnnounceDone();
 
     private void AnnounceDone() => Show(new IslandAlert
     {
