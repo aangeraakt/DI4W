@@ -44,7 +44,7 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
         Detach();
         if (_enumerator is null || !_enumerator.HasDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia))
         {
-            SetStatus("No speakers or headphones found.", problem: false);
+            SetStatus(L.T("No speakers or headphones found."), problem: false);
             return;
         }
         SetStatus(null);
@@ -69,7 +69,7 @@ public sealed class VolumeAddon : Addon, IMMNotificationClient
         var muted = data.Muted || level <= 0.001f;
         Context.Ui(() =>
         {
-            _hud.Set(muted ? 0 : level, muted ? "Muted" : $"{Math.Round(level * 100)}", muted ? Muted : Speaker);
+            _hud.Set(muted ? 0 : level, muted ? L.T("Muted") : $"{Math.Round(level * 100)}", muted ? Muted : Speaker);
             Show(_hud.Alert);
         });
     }

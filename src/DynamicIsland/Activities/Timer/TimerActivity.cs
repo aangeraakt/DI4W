@@ -48,7 +48,7 @@ public sealed class TimerActivity : Activity
         Expanded = BuildExpanded();
     }
 
-    public override string Name => "Timer";
+    public override string Name => L.T("Timer");
     public override int Priority => 30;
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
@@ -152,7 +152,7 @@ public sealed class TimerActivity : Activity
         pulse.BeginAnimation(ScaleTransform.ScaleYProperty, anim);
 
         IslandAlert? alert = null;
-        var stop = Ui.CircleButton(Ui.Text("Stop", 13, FontWeights.SemiBold, Brushes.Black), Ui.Orange, 46, () =>
+        var stop = Ui.CircleButton(Ui.Text(L.T("Stop"), 13, FontWeights.SemiBold, Brushes.Black), Ui.Orange, 46, () =>
         {
             if (alert is not null) _manager.DismissAlert(alert);
         });
@@ -160,7 +160,7 @@ public sealed class TimerActivity : Activity
 
         alert = new IslandAlert
         {
-            Content = Ui.AlertView(icon, "Timer", $"{label} is done", Ui.Orange, stop),
+            Content = Ui.AlertView(icon, L.T("Timer"), L.F("{0} is done", label), Ui.Orange, stop),
             Size = new Size(380, 76),
             Sticky = true,
             BreaksThroughQuiet = true,
@@ -201,15 +201,15 @@ public sealed class TimerActivity : Activity
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var pause = Ui.CircleButton(_pauseIcon, Ui.OrangeDim, 50, TogglePause, "Pause / resume");
-        var cancel = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Cancel, "Cancel");
+        var pause = Ui.CircleButton(_pauseIcon, Ui.OrangeDim, 50, TogglePause, L.T("Pause / resume"));
+        var cancel = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Cancel, L.T("Cancel"));
         cancel.Margin = new Thickness(12, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(cancel);
         grid.Children.Add(buttons);
 
         var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        var label = Ui.Text("Timer", 14, FontWeights.SemiBold, Ui.Orange);
+        var label = Ui.Text(L.T("Timer"), 14, FontWeights.SemiBold, Ui.Orange);
         label.HorizontalAlignment = HorizontalAlignment.Right;
         _expandedText.HorizontalAlignment = HorizontalAlignment.Right;
         _expandedText.Margin = new Thickness(0, -6, 0, -4);

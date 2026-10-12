@@ -71,7 +71,7 @@ public sealed partial class NotificationsPage : Page
             ChatAppsPanel.Children.Add(new SettingsCard
             {
                 Header = header,
-                Description = app.HasCalls ? "Messages and calls" : "New mail",
+                Description = app.HasCalls ? L.T("Messages and calls") : L.T("New mail"),
                 Content = toggle,
             });
         }
@@ -118,7 +118,7 @@ public sealed partial class NotificationsPage : Page
                 Content = new FontIcon { Glyph = "", FontSize = 14 },
                 Padding = new Thickness(8),
             };
-            ToolTipService.SetToolTip(remove, $"Remove {app}");
+            ToolTipService.SetToolTip(remove, L.F("Remove {0}", app));
             remove.Click += (_, _) =>
             {
                 SettingsStore.Change(s => s.NotificationApps.Remove(app));

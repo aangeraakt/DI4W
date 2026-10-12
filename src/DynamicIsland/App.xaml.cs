@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using DynamicIsland.Activities.Api;
 using DynamicIsland.Activities.Claude;
 using DynamicIsland.Activities.Focus;
 using DynamicIsland.Activities.Stopwatches;
@@ -85,11 +86,13 @@ public partial class App : Application
 
         Log.Info($"Starting Dynamic Island {UpdateChecker.CurrentVersion}");
         _settings = AppSettings.Load();
+        L.Use(_settings.Language);
         if (_settings.IslandPath != Environment.ProcessPath)
         {
             var path = Environment.ProcessPath;
             _settings = AppSettings.Update(s => s.IslandPath = path);
         }
+        Power.Start();
         _manager = new ActivityManager();
 
         // Activities
@@ -118,19 +121,34 @@ public partial class App : Application
         _island.Show();
         _island.HotkeyPressed += () => SetPaused(!Paused);
         _island.RegisterHideHotkey(_settings.HideHotkey);
+        _island.RegisterExpandHotkey(_settings.ExpandHotkey);
 
         _addons = new AddonHost(new AddonContext(_settings, _manager, _island, Dispatcher));
         _addons.Sync();
 
         CreateTray();
+        if (_settings.Paused) SetPaused(true, save: false); // hidden before the restart: stay hidden
         WatchSettings();
         ScheduleUpdateChecks();
 
         // Integrations
-        if (_settings.ClaudeEnabled)
+        // One local server for Claude Code hooks (/claude/...) and the Island API (/alert, /progress).
+        var claudeOn = _settings.ClaudeEnabled;
+        var api = _settings.Addons.IslandApi ? new IslandApi(_manager, Dispatcher) : null;
+        if (claudeOn || api is not null)
         {
-            _hookServer = new ClaudeHookServer(_settings.ClaudePort,
-                (kind, json) => Dispatcher.BeginInvoke(() => claude.Handle(kind, json)));
+            _hookServer = new ClaudeHookServer(_settings.ClaudePort, request =>
+            {
+                if (request.Path.StartsWith("/claude/", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!claudeOn) return LocalResponse.Error(404, "Claude Code is turned off in the settings.");
+                    var kind = request.Path["/claude/".Length..].Trim('/').ToLowerInvariant();
+                    Dispatcher.BeginInvoke(() => claude.Handle(kind, request.Body));
+                    return LocalResponse.Ok;
+                }
+                if (request.Path == "/") return LocalResponse.Ok;
+                return api?.Handle(request);
+            });
             _hookServer.Start();
         }
 
@@ -215,13 +233,18 @@ public partial class App : Application
         // These are wired up once at startup, so changing them restarts the island.
         var needsRestart = updated.ClaudeEnabled != _settings.ClaudeEnabled
                            || updated.ClaudePort != _settings.ClaudePort
-                           || updated.MediaEnabled != _settings.MediaEnabled;
+                           || updated.MediaEnabled != _settings.MediaEnabled
+                           || updated.Addons.IslandApi != _settings.Addons.IslandApi
+                           || updated.Language != _settings.Language;
 
         var hotkeyChanged = updated.HideHotkey != _settings.HideHotkey;
+        var expandHotkeyChanged = updated.ExpandHotkey != _settings.ExpandHotkey;
+        if (updated.Paused != Paused) SetPaused(updated.Paused, save: false);
 
         _settings.CopyFrom(updated);
         _island?.ApplyScale();
         if (hotkeyChanged) _island?.RegisterHideHotkey(_settings.HideHotkey);
+        if (expandHotkeyChanged) _island?.RegisterExpandHotkey(_settings.ExpandHotkey);
         _addons?.Sync();
 
         if (needsRestart)
@@ -259,7 +282,7 @@ public partial class App : Application
             _manager.ShowAlert(new IslandAlert
             {
                 Content = Ui.AlertView(Ui.GlyphCircle(Icons.UpdateGlyph, Ui.Blue, 46, 20),
-                                       "Update available", $"Version {update.Version} is ready. Click to install."),
+                                       L.T("Update available"), L.F("Version {0} is ready. Click to install.", update.Version)),
                 Duration = TimeSpan.FromSeconds(8),
                 StickyUntilHover = true,
                 OnClick = () => OpenSettings("--page", "About"),
@@ -277,7 +300,7 @@ public partial class App : Application
     {
         _tray = new TaskbarIcon
         {
-            ToolTipText = "Dynamic Island",
+            ToolTipText = L.T("Dynamic Island"),
             IconSource = new BitmapImage(new Uri("pack://application:,,,/Assets/island.ico")),
             ContextMenu = BuildMenu(),
         };
@@ -298,43 +321,49 @@ public partial class App : Application
     {
         menu.Items.Clear();
 
-        var timer = new MenuItem { Header = "Start timer" };
+        var timer = new MenuItem { Header = L.T("Start timer") };
         foreach (var m in new[] { 1, 3, 5, 10, 15, 25, 45, 60 })
         {
-            timer.Items.Add(Item($"{m} minutes", () => StartTimer(TimeSpan.FromMinutes(m))));
+            timer.Items.Add(Item(L.F("{0} minutes", m), () => StartTimer(TimeSpan.FromMinutes(m))));
         }
         timer.Items.Add(new Separator());
-        timer.Items.Add(Item("Custom…", () =>
+        timer.Items.Add(Item(L.T("Custom…"), () =>
         {
             _island?.OpenPanel(BuildPicker(), TimerPicker.PanelSize);
         }));
         menu.Items.Add(timer);
-        if (_timer.IsActive) menu.Items.Add(Item("Cancel timer", _timer.Cancel));
-        menu.Items.Add(_focus.IsActive ? Item("Stop focus session", _focus.Stop) : Item("Start focus session", StartFocus));
-        menu.Items.Add(_stopwatch.IsActive ? Item("Stop stopwatch", _stopwatch.Stop) : Item("Start stopwatch", StartStopwatch));
+        if (_timer.IsActive) menu.Items.Add(Item(L.T("Cancel timer"), _timer.Cancel));
+        menu.Items.Add(_focus.IsActive ? Item(L.T("Stop focus session"), _focus.Stop) : Item(L.T("Start focus session"), StartFocus));
+        menu.Items.Add(_stopwatch.IsActive ? Item(L.T("Stop stopwatch"), _stopwatch.Stop) : Item(L.T("Start stopwatch"), StartStopwatch));
         menu.Items.Add(new Separator());
 
         var pause = new MenuItem
         {
-            Header = "Pause island",
+            Header = L.T("Pause island"),
             IsCheckable = true,
             IsChecked = Paused,
             InputGestureText = Hotkey.TryParse(_settings.HideHotkey, out _, out _) ? _settings.HideHotkey : "",
         };
         pause.Click += (_, _) => SetPaused(pause.IsChecked);
         menu.Items.Add(pause);
-        menu.Items.Add(Item("Settings…", () => OpenSettings()));
-        menu.Items.Add(Item("Check for updates…", () => OpenSettings("--page", "About")));
+        menu.Items.Add(Item(L.T("Settings…"), () => OpenSettings()));
+        menu.Items.Add(Item(L.T("Check for updates…"), () => OpenSettings("--page", "About")));
         menu.Items.Add(new Separator());
-        menu.Items.Add(Item("Quit", Shutdown));
+        menu.Items.Add(Item(L.T("Quit"), Shutdown));
     }
 
-    /// <summary>Hides or shows the island. Used by the menu and the hide shortcut; the menu reads Paused when it opens.</summary>
-    private void SetPaused(bool paused)
+    /// <summary>
+    /// Hides or shows the island. Used by the menu and the hide shortcut; the menu reads Paused when it opens.
+    /// Saved, so a hidden island stays hidden after a restart; the tray tooltip says so.
+    /// </summary>
+    private void SetPaused(bool paused, bool save = true)
     {
         Paused = paused;
         if (paused) _island?.Hide();
         else _island?.Show();
+        if (_tray is not null) _tray.ToolTipText = paused ? L.T("Dynamic Island (hidden)") : L.T("Dynamic Island");
+        if (save && _settings.Paused != paused) AppSettings.Update(s => s.Paused = paused);
+        _settings.Paused = paused;
     }
 
     private static MenuItem Item(string header, Action onClick)
@@ -359,9 +388,8 @@ public partial class App : Application
         if (exe is null)
         {
             Log.Error("Settings app not found next to the island");
-            MessageBox.Show("The settings app (DynamicIsland.Settings.exe) was not found.\n\n" +
-                            "Publish both apps with:\n  dotnet publish src/DynamicIsland -c Release -o publish",
-                            "Dynamic Island", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(L.T("The settings app (DynamicIsland.Settings.exe) was not found. Reinstall Dynamic Island, or publish both apps with: dotnet publish src/DynamicIsland -c Release -o publish"),
+                            L.T("Dynamic Island"), MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 

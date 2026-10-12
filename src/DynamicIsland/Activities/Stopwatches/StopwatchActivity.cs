@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using DynamicIsland.Settings;
 using DynamicIsland.UI;
 using Activity = DynamicIsland.Core.Activity;
 
@@ -27,7 +28,7 @@ public sealed class StopwatchActivity : Activity
         Expanded = BuildExpanded();
     }
 
-    public override string Name => "Stopwatch";
+    public override string Name => L.T("Stopwatch");
     public override int Priority => 28;
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
@@ -78,15 +79,15 @@ public sealed class StopwatchActivity : Activity
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var pause = Ui.CircleButton(_pauseIcon, Ui.Brush("#4A4010"), 50, TogglePause, "Pause / resume");
-        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Stop, "Stop");
+        var pause = Ui.CircleButton(_pauseIcon, Ui.Brush("#4A4010"), 50, TogglePause, L.T("Pause / resume"));
+        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 13, Ui.White, 2.4), Ui.Track, 50, Stop, L.T("Stop"));
         stop.Margin = new Thickness(12, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(stop);
         grid.Children.Add(buttons);
 
         var right = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-        var label = Ui.Text("Stopwatch", 14, FontWeights.SemiBold, Ui.Amber);
+        var label = Ui.Text(L.T("Stopwatch"), 14, FontWeights.SemiBold, Ui.Amber);
         label.HorizontalAlignment = HorizontalAlignment.Right;
         _expandedText.HorizontalAlignment = HorizontalAlignment.Right;
         _expandedText.Margin = new Thickness(0, -6, 0, -4);

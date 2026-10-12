@@ -52,18 +52,18 @@ public sealed partial class NotificationPresenter
         var caller = CallPattern().IsMatch(n.Title) && !string.IsNullOrWhiteSpace(n.Body) ? n.Body : n.Title;
         IslandAlert? alert = null;
 
-        var decline = Ui.CircleButton(Ui.Glyph("", 18, Ui.White), Ui.Red, 44, () => _manager.DismissAlert(alert), "Decline");
+        var decline = Ui.CircleButton(Ui.Glyph("", 18, Ui.White), Ui.Red, 44, () => _manager.DismissAlert(alert), L.T("Decline"));
         var answer = Ui.CircleButton(Ui.Glyph("", 18, Ui.White), Ui.Green, 44, () =>
         {
             open();
             _manager.DismissAlert(alert);
-        }, $"Answer in {app}");
+        }, L.F("Answer in {0}", app));
         answer.Margin = new Thickness(10, 0, 0, 0);
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Children = { decline, answer } };
 
         alert = new IslandAlert
         {
-            Content = Ui.AlertView(icon, caller, $"Incoming call · {app}", accessory: buttons),
+            Content = Ui.AlertView(icon, caller, L.F("Incoming call · {0}", app), accessory: buttons),
             Size = new Size(420, 84),
             Duration = TimeSpan.FromSeconds(30),
             OnClick = open,

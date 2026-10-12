@@ -16,6 +16,9 @@ public abstract class Activity
 
     public abstract string Name { get; }
 
+    /// <summary>Extra words for screen readers when the compact view has no text of its own (e.g. the song).</summary>
+    public virtual string? AccessibleDetail => null;
+
     /// <summary>Higher wins the main pill; the runner-up gets the bubble.</summary>
     public abstract int Priority { get; }
 

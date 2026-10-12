@@ -69,6 +69,14 @@
                     <FontIcon Glyph="&#xE8A7;" />
                 </tk:SettingsCard.ActionIcon>
             </tk:SettingsCard>
+
+            <tk:SettingsCard Header="Report a problem"
+                             Description="Opens a GitHub issue with your version, Windows version and the latest log lines filled in. You see and can edit everything first; nothing is sent automatically.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xEBE8;" />
+                </tk:SettingsCard.HeaderIcon>
+                <Button Content="Report a problem…" Click="OnReport" />
+            </tk:SettingsCard>
         </StackPanel>
     </ScrollViewer>
 </Page>

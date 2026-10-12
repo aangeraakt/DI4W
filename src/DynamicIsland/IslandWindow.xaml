@@ -56,5 +56,10 @@
 
         <!-- Privacy dots (mic / camera in use), right of the pill like the iPhone's status dots. -->
         <StackPanel x:Name="Indicators" Orientation="Horizontal" Background="Transparent" />
+
+        <!-- For screen readers only: what the island shows, in words. Invisible, and a live region so new
+             alerts are announced (a Border, like the pill, isn't exposed to screen readers at all). -->
+        <TextBlock x:Name="Announcer" Opacity="0" IsHitTestVisible="False" Width="1" Height="1"
+                   AutomationProperties.LiveSetting="Polite" />
     </Canvas>
 </Window>

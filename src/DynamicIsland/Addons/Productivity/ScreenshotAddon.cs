@@ -54,10 +54,10 @@ public sealed class ScreenshotAddon : Addon
         if (thumbnail is null) return;
 
         var folderButton = Ui.CircleButton(Ui.Glyph("", 15, Ui.White), Ui.ButtonBg, 36,
-                                           () => Process.Start("explorer.exe", $"/select,\"{path}\""), "Show in folder");
+                                           () => Process.Start("explorer.exe", $"/select,\"{path}\""), L.T("Show in folder"));
         Show(new IslandAlert
         {
-            Content = Ui.AlertView(Ui.Image(thumbnail, 46, 8), "Screenshot saved", Path.GetFileName(path), accessory: folderButton),
+            Content = Ui.AlertView(Ui.Image(thumbnail, 46, 8), L.T("Screenshot saved"), Path.GetFileName(path), accessory: folderButton),
             Size = new Size(380, 76),
             Duration = TimeSpan.FromSeconds(4),
             OnClick = () => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }),

@@ -23,7 +23,7 @@ public sealed class BrightnessAddon : Addon
     {
         if (!HasInternalDisplay())
         {
-            SetStatus("No built-in screen found. External monitors don't report brightness changes to Windows.", problem: false);
+            SetStatus(L.T("No built-in screen found. External monitors don't report brightness changes to Windows."), problem: false);
             return; // nothing to watch; stay "on" but idle
         }
 

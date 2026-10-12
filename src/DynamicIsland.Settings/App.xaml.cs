@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using DynamicIsland.Settings;
 using Microsoft.UI.Xaml;
 
 namespace DynamicIsland.SettingsApp;
@@ -36,8 +37,35 @@ public partial class App : Application
         var pageIndex = Array.IndexOf(cmd, "--page");
         var page = pageIndex >= 0 && pageIndex + 1 < cmd.Length ? cmd[pageIndex + 1] : null;
 
+        // Language first: pages are translated as they are built.
+        L.Use(SettingsStore.Current.Language);
+        try
+        {
+            // Also for the controls' own text (dialog buttons, number boxes).
+            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = L.IsDutch ? "nl-NL" : "en-US";
+        }
+        catch
+        {
+            // Not available in every setup; our own text is translated regardless.
+        }
+
         _window = new MainWindow(page);
         _window.Activate();
+    }
+
+    /// <summary>Restarts the settings app on a page (after a language change, so every text is redrawn).</summary>
+    public static void Restart(string page)
+    {
+        var app = (App)Current;
+        SettingsStore.Flush();
+        app._singleInstance?.ReleaseMutex();
+        app._singleInstance?.Dispose();
+        app._singleInstance = null;
+        var psi = new System.Diagnostics.ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false };
+        psi.ArgumentList.Add("--page");
+        psi.ArgumentList.Add(page);
+        System.Diagnostics.Process.Start(psi);
+        app.Exit();
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]

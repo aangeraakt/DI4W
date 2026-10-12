@@ -26,9 +26,9 @@ public static class TimerPicker
 
         var modes = new (string Name, string Glyph, Brush Color, Func<FrameworkElement> View)[]
         {
-            ("Timer", Icons.TimerGlyph, Ui.Orange, () => BuildTimer(startTimer)),
-            ("Focus", "", Ui.Red, () => BuildFocus(startFocus, options)),
-            ("Stopwatch", "", Ui.Amber, () => BuildStopwatch(startStopwatch)),
+            (L.T("Timer"), Icons.TimerGlyph, Ui.Orange, () => BuildTimer(startTimer)),
+            (L.T("Focus"), "", Ui.Red, () => BuildFocus(startFocus, options)),
+            (L.T("Stopwatch"), "", Ui.Amber, () => BuildStopwatch(startStopwatch)),
         };
 
         // Header: icon + title on the left, mode switch on the right.
@@ -81,8 +81,8 @@ public static class TimerPicker
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(Ui.Text($"{o.FocusMinutes} min focus", 30, FontWeights.Light, Ui.White));
-        var detail = Ui.Text($"then a {o.BreakMinutes} min break · every {Ordinal(o.SessionsBeforeLongBreak)} break is {o.LongBreakMinutes} min",
+        text.Children.Add(Ui.Text(L.F("{0} min focus", o.FocusMinutes), 30, FontWeights.Light, Ui.White));
+        var detail = Ui.Text(L.F("then a {0} min break · every {1} break is {2} min", o.BreakMinutes, Ordinal(o.SessionsBeforeLongBreak), o.LongBreakMinutes),
                              13, FontWeights.Normal, Ui.Grey);
         detail.TextWrapping = TextWrapping.Wrap;
         text.Children.Add(detail);
@@ -96,7 +96,7 @@ public static class TimerPicker
         return grid;
     }
 
-    private static string Ordinal(int n) => n % 100 is 11 or 12 or 13 ? $"{n}th" : (n % 10) switch { 1 => $"{n}st", 2 => $"{n}nd", 3 => $"{n}rd", _ => $"{n}th" };
+    private static string Ordinal(int n) => L.IsDutch ? $"{n}e" : n % 100 is 11 or 12 or 13 ? $"{n}th" : (n % 10) switch { 1 => $"{n}st", 2 => $"{n}nd", 3 => $"{n}rd", _ => $"{n}th" };
 
     private static FrameworkElement BuildStopwatch(Action start)
     {
@@ -106,7 +106,7 @@ public static class TimerPicker
 
         var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         text.Children.Add(Ui.Text("0:00.0", 34, FontWeights.Light, Ui.Amber, tabular: true));
-        text.Children.Add(Ui.Text("Counts up until you stop it", 13, FontWeights.Normal, Ui.Grey));
+        text.Children.Add(Ui.Text(L.T("Counts up until you stop it"), 13, FontWeights.Normal, Ui.Grey));
         grid.Children.Add(text);
 
         var button = Ui.CircleButton(Ui.Text("Start", 14, FontWeights.SemiBold, Brushes.Black), Ui.Amber, 56, start);
@@ -129,7 +129,7 @@ public static class TimerPicker
         var presets = new UniformGrid { Columns = PresetMinutes.Length, Margin = new Thickness(-3, 12, -3, 0) };
         foreach (var m in PresetMinutes)
         {
-            var chip = Ui.Button(Ui.Text($"{m} min", 13, FontWeights.SemiBold, Ui.White),
+            var chip = Ui.Button(Ui.Text(L.F("{0} min", m), 13, FontWeights.SemiBold, Ui.White),
                                  () => start(TimeSpan.FromMinutes(m)), Ui.ButtonBg, double.NaN, 30);
             chip.Margin = new Thickness(3, 0, 3, 0);
             presets.Children.Add(chip);
@@ -158,7 +158,7 @@ public static class TimerPicker
         {
             target.Cursor = Cursors.SizeNS;
             target.Background = Brushes.Transparent; // hit-testable
-            target.ToolTip = "Scroll to change";
+            target.ToolTip = L.T("Scroll to change");
             target.MouseWheel += (_, e) =>
             {
                 change(e.Delta > 0 ? 1 : -1);
@@ -179,12 +179,12 @@ public static class TimerPicker
         {
             minutes = Math.Max(0, minutes - 1);
             Render();
-        }, "−1 min");
+        }, L.T("−1 min"));
         var plus = Ui.CircleButton(Ui.Text("+", 18, FontWeights.SemiBold, Ui.White), Ui.ButtonBg, 32, () =>
         {
             minutes = Math.Min(180, minutes + 1);
             Render();
-        }, "+1 min");
+        }, L.T("+1 min"));
 
         var picker = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         picker.Children.Add(minus);

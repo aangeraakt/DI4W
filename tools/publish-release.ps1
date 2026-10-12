@@ -54,6 +54,10 @@ $msi = Join-Path $out "DI4W-$tag-win-x64.msi"
 if (-not (Test-Path $msi)) { throw "Installer not found at $msi." }
 Write-Host ("Installer: {0} ({1:N1} MB)" -f $msi, ((Get-Item $msi).Length / 1MB))
 
+# winget manifests for this release (submit them with tools/winget-submit.ps1 once the release is live).
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'winget-manifest.ps1') -Version $Version -Msi $msi -OutDir (Join-Path $out 'winget')
+if ($LASTEXITCODE -ne 0) { throw "Writing the winget manifests failed." }
+
 # 3. Commit the version change so the tag points at the code that was built.
 if (git status --porcelain) {
     git add src/DynamicIsland/DynamicIsland.csproj src/DynamicIsland.Settings/DynamicIsland.Settings.csproj

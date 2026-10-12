@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows.Threading;
+using DynamicIsland.Core;
 using DynamicIsland.Settings;
 using DynamicIsland.UI;
 using static DynamicIsland.Interop.Win32;
@@ -27,8 +28,8 @@ public sealed class DoNotDisturbAddon : Addon
 
     protected override void Start()
     {
-        _moon.ToolTip = "Do Not Disturb is on";
-        _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _moon.ToolTip = L.T("Do Not Disturb is on");
+        _poll = new DispatcherTimer { Interval = Power.Interval(TimeSpan.FromSeconds(3)) };
         _poll.Tick += (_, _) => Apply(IsQuiet());
         _poll.Start();
         Apply(IsQuiet());

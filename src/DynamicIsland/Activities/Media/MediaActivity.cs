@@ -56,7 +56,8 @@ public sealed class MediaActivity : Activity
         _service.Updated += OnUpdated;
     }
 
-    public override string Name => "Now Playing";
+    public override string Name => L.T("Now Playing");
+    public override string? AccessibleDetail => string.Join(" – ", new[] { _title.Text, _artist.Text }.Where(t => !string.IsNullOrWhiteSpace(t)));
     public override int Priority => 10;
     public override double CompactWidth => 280;
     public override Size ExpandedSize => new(440, 196);
@@ -134,7 +135,7 @@ public sealed class MediaActivity : Activity
         top.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         _expandedArt.Cursor = Cursors.Hand;
-        _expandedArt.ToolTip = "Open Spotify";
+        _expandedArt.ToolTip = L.T("Open Spotify");
         _expandedArt.MouseLeftButtonUp += (_, e) =>
         {
             OpenPlayer();
@@ -190,11 +191,11 @@ public sealed class MediaActivity : Activity
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 6, 0, 0),
         };
-        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Previous, 30, Ui.White), () => _ = _service.Previous(), null, 54, 46, "Previous"));
-        var pp = Ui.Button(_playPauseIcon, () => _ = _service.TogglePlayPause(), null, 54, 46, "Play / pause");
+        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Previous, 30, Ui.White), () => _ = _service.Previous(), null, 54, 46, L.T("Previous")));
+        var pp = Ui.Button(_playPauseIcon, () => _ = _service.TogglePlayPause(), null, 54, 46, L.T("Play / pause"));
         pp.Margin = new Thickness(28, 0, 28, 0);
         controls.Children.Add(pp);
-        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Next, 30, Ui.White), () => _ = _service.Next(), null, 54, 46, "Next"));
+        controls.Children.Add(Ui.Button(Ui.Shape(Icons.Next, 30, Ui.White), () => _ = _service.Next(), null, 54, 46, L.T("Next")));
         Grid.SetRow(controls, 2);
         root.Children.Add(controls);
 

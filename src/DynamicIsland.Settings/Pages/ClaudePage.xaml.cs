@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using DynamicIsland.Settings;
 
 namespace DynamicIsland.SettingsApp.Pages;
 
@@ -20,7 +21,7 @@ public sealed partial class ClaudePage : Page
         if (_installer is null)
         {
             HooksCard.IsEnabled = false;
-            HooksCard.Description = "The hook scripts (tools\\install-claude-hooks.ps1) weren't found next to the island.";
+            HooksCard.Description = L.T("The hook scripts (tools\\install-claude-hooks.ps1) weren't found next to the island.");
         }
         _loading = false;
     }
@@ -65,17 +66,17 @@ public sealed partial class ClaudePage : Page
 
             if (process.ExitCode == 0)
             {
-                Show(InfoBarSeverity.Success, uninstall ? "Hooks removed" : "Hooks installed",
-                     uninstall ? "Claude Code no longer reports to the island." : "Start a new Claude Code session to see it in the island.");
+                Show(InfoBarSeverity.Success, uninstall ? L.T("Hooks removed") : L.T("Hooks installed"),
+                     uninstall ? L.T("Claude Code no longer reports to the island.") : L.T("Start a new Claude Code session to see it in the island."));
             }
             else
             {
-                Show(InfoBarSeverity.Error, "Something went wrong", error.Trim());
+                Show(InfoBarSeverity.Error, L.T("Something went wrong"), error.Trim());
             }
         }
         catch (Exception ex)
         {
-            Show(InfoBarSeverity.Error, "Something went wrong", ex.Message);
+            Show(InfoBarSeverity.Error, L.T("Something went wrong"), ex.Message);
         }
         finally
         {

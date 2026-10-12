@@ -47,7 +47,7 @@ public sealed class FocusActivity : Activity
         Expanded = BuildExpanded();
     }
 
-    public override string Name => "Focus";
+    public override string Name => L.T("Focus");
     public override int Priority => 32;
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
@@ -114,8 +114,8 @@ public sealed class FocusActivity : Activity
         if (!announce) return;
         Chime();
         var (title, subtitle) = next == Phase.Focus
-            ? ("Back to focus", $"{(int)_length.TotalMinutes} min · session {_completedFocus + 1}")
-            : (next == Phase.LongBreak ? "Long break" : "Break time", $"{(int)_length.TotalMinutes} min · nice work");
+            ? (L.T("Back to focus"), L.F("{0} min · session {1}", (int)_length.TotalMinutes, _completedFocus + 1))
+            : (next == Phase.LongBreak ? L.T("Long break") : L.T("Break time"), L.F("{0} min · nice work", (int)_length.TotalMinutes));
         _manager.ShowAlert(new IslandAlert
         {
             Content = Ui.AlertView(Ui.GlyphCircle(next == Phase.Focus ? "" : "", Color, 46, 20), title, subtitle, Color),
@@ -144,9 +144,9 @@ public sealed class FocusActivity : Activity
         }
         _label.Text = _phase switch
         {
-            Phase.Focus => $"Focus · {_completedFocus % Math.Max(1, Options.SessionsBeforeLongBreak) + 1} of {Options.SessionsBeforeLongBreak}",
-            Phase.Break => "Break",
-            _ => "Long break",
+            Phase.Focus => L.F("Focus · {0} of {1}", _completedFocus % Math.Max(1, Options.SessionsBeforeLongBreak) + 1, Options.SessionsBeforeLongBreak),
+            Phase.Break => L.T("Break"),
+            _ => L.T("Long break"),
         };
         _label.Foreground = Color;
         _pauseIcon.Content = Ui.Shape(paused ? Icons.Play : Icons.Pause, 15, Color);
@@ -187,9 +187,9 @@ public sealed class FocusActivity : Activity
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-        var pause = Ui.CircleButton(_pauseIcon, Ui.ButtonBg, 44, TogglePause, "Pause / resume");
-        var skip = Ui.CircleButton(Ui.Shape(Icons.Next, 14, Ui.White), Ui.ButtonBg, 44, Skip, "Skip to next");
-        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 12, Ui.White, 2.4), Ui.Track, 44, Stop, "Stop");
+        var pause = Ui.CircleButton(_pauseIcon, Ui.ButtonBg, 44, TogglePause, L.T("Pause / resume"));
+        var skip = Ui.CircleButton(Ui.Shape(Icons.Next, 14, Ui.White), Ui.ButtonBg, 44, Skip, L.T("Skip to next"));
+        var stop = Ui.CircleButton(Icons.Stroke(Icons.Close, 12, Ui.White, 2.4), Ui.Track, 44, Stop, L.T("Stop"));
         skip.Margin = stop.Margin = new Thickness(10, 0, 0, 0);
         buttons.Children.Add(pause);
         buttons.Children.Add(skip);

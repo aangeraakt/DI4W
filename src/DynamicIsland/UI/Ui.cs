@@ -92,6 +92,9 @@ public static class Ui
             Style = (Style)Application.Current.FindResource("IslandButton"),
         };
         b.Click += (_, _) => onClick();
+        // Screen readers: icon-only buttons need a name; use the tooltip, or the label text.
+        var name = tooltip ?? (content as TextBlock)?.Text;
+        if (name is not null) System.Windows.Automation.AutomationProperties.SetName(b, name);
         b.SizeChanged += (_, _) =>
         {
             if (b.Template?.FindName("Bg", b) is Border bg)

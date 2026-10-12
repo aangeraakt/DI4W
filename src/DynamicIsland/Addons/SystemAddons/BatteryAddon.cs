@@ -22,7 +22,7 @@ public sealed class BatteryAddon : Addon
     {
         if (PowerManager.BatteryStatus == BatteryStatus.NotPresent)
         {
-            SetStatus("This PC has no battery.", problem: false);
+            SetStatus(L.T("This PC has no battery."), problem: false);
             return; // desktop PC: nothing to show
         }
         _pluggedIn = IsPluggedIn;
@@ -48,15 +48,15 @@ public sealed class BatteryAddon : Addon
 
         if (plugged)
         {
-            Announce("Charging", $"{percent}%", percent, Ui.Green, charging: true);
+            Announce(L.T("Charging"), $"{percent}%", percent, Ui.Green, charging: true);
         }
         else
         {
             var left = PowerManager.RemainingDischargeTime;
             var estimate = left > TimeSpan.FromMinutes(1) && left < TimeSpan.FromDays(1)
-                ? left.TotalHours >= 1 ? $" · {(int)left.TotalHours} h {left.Minutes} min left" : $" · {left.Minutes} min left"
+                ? left.TotalHours >= 1 ? L.F(" · {0} h {1} min left", (int)left.TotalHours, left.Minutes) : L.F(" · {0} min left", left.Minutes)
                 : "";
-            Announce("On battery", $"{percent}%{estimate}", percent, percent <= Options.BatteryLowPercent ? Ui.Red : Ui.White, charging: false);
+            Announce(L.T("On battery"), $"{percent}%{estimate}", percent, percent <= Options.BatteryLowPercent ? Ui.Red : Ui.White, charging: false);
         }
     });
 
@@ -70,11 +70,11 @@ public sealed class BatteryAddon : Addon
         // Warn once when crossing each threshold on the way down.
         if (previous > Options.BatteryCriticalPercent && percent <= Options.BatteryCriticalPercent)
         {
-            Announce("Battery very low", $"{percent}% left. Plug in your charger.", percent, Ui.Red, false, urgent: true);
+            Announce(L.T("Battery very low"), L.F("{0}% left. Plug in your charger.", percent), percent, Ui.Red, false, urgent: true);
         }
         else if (previous > Options.BatteryLowPercent && percent <= Options.BatteryLowPercent)
         {
-            Announce("Low battery", $"{percent}% left", percent, Ui.Amber, false);
+            Announce(L.T("Low battery"), L.F("{0}% left", percent), percent, Ui.Amber, false);
         }
     });
 

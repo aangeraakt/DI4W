@@ -16,7 +16,7 @@ public sealed partial class AboutPage : Page
     public AboutPage()
     {
         InitializeComponent();
-        VersionCard.Description = $"Version {UpdateChecker.CurrentVersion}";
+        VersionCard.Description = L.F("Version {0}", UpdateChecker.CurrentVersion);
         SettingsFileCard.Description = AppSettings.FilePath;
         AutoCheck.IsOn = SettingsStore.Current.AutoCheckUpdates;
         UpdateStatus();
@@ -29,7 +29,7 @@ public sealed partial class AboutPage : Page
     private void UpdateStatus()
     {
         var running = SettingsStore.IslandRunning;
-        Status.Text = running ? "Running" : "Not running";
+        Status.Text = running ? L.T("Running") : L.T("Not running");
         StartButton.Visibility = running || SettingsStore.IslandExe is null ? Visibility.Collapsed : Visibility.Visible;
     }
 
@@ -46,6 +46,54 @@ public sealed partial class AboutPage : Page
     {
         Directory.CreateDirectory(Log.Directory);
         SettingsStore.Open(Log.Directory);
+    }
+
+    // ───────────────────────────── report a problem ─────────────────────────────
+
+    private async void OnReport(object sender, RoutedEventArgs e)
+    {
+        var title = new TextBox { Header = L.T("Title"), PlaceholderText = L.T("Short summary, e.g. \"Weather doesn't show\"") };
+        var body = new TextBox
+        {
+            Header = L.T("Report (you can change anything)"),
+            Text = ProblemReport.Build(),
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            Height = 320,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Mono, Consolas"),
+            FontSize = 12,
+        };
+        ScrollViewer.SetVerticalScrollBarVisibility(body, ScrollBarVisibility.Auto);
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = L.T("Report a problem"),
+            Content = new StackPanel { Spacing = 12, Width = 560, Children = { title, body } },
+            PrimaryButtonText = L.T("Open on GitHub"),
+            SecondaryButtonText = L.T("Copy"),
+            CloseButtonText = L.T("Cancel"),
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        var choice = await dialog.ShowAsync();
+        if (choice == ContentDialogResult.None) return;
+
+        var report = body.Text;
+        if (choice == ContentDialogResult.Secondary || report.Length > ProblemReport.MaxBodyInLink)
+        {
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(report);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+        }
+        if (choice == ContentDialogResult.Primary)
+        {
+            // Long reports don't fit in a link: open an empty issue and let the user paste (it's on the clipboard).
+            var text = report.Length > ProblemReport.MaxBodyInLink
+                ? "<!-- The report was too long for a link and has been copied: paste it here (Ctrl+V). -->"
+                : report;
+            SettingsStore.Open($"{ProblemReport.NewIssueUrl}?title={Uri.EscapeDataString(title.Text.Trim())}&body={Uri.EscapeDataString(text)}");
+        }
     }
 
     // ───────────────────────────── updates ─────────────────────────────
@@ -67,15 +115,15 @@ public sealed partial class AboutPage : Page
             _update = await UpdateChecker.CheckAsync();
             if (_update is null)
             {
-                UpdateCard.Description = $"You're up to date. Last checked {DateTime.Now:t}.";
+                UpdateCard.Description = L.F("You're up to date. Last checked {0:t}.", DateTime.Now);
                 UpdateBar.IsOpen = false;
                 return;
             }
 
-            UpdateCard.Description = $"Version {_update.Version} is available.";
-            UpdateBar.Title = $"Version {_update.Version} is available";
+            UpdateCard.Description = L.F("Version {0} is available.", _update.Version);
+            UpdateBar.Title = L.F("Version {0} is available", _update.Version);
             var size = Updater.PickAsset(_update)?.Size ?? 0;
-            UpdateBar.Message = $"You have {UpdateChecker.CurrentVersion}. Download size {size / 1048576.0:0.#} MB.";
+            UpdateBar.Message = L.F("You have {0}. Download size {1:0.#} MB.", UpdateChecker.CurrentVersion, size / 1048576.0);
             UpdateBar.Severity = InfoBarSeverity.Informational;
             ReleaseNotes.Text = PlainText(_update.Notes);
             ReleaseNotes.Visibility = ReleaseNotes.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -85,13 +133,13 @@ public sealed partial class AboutPage : Page
             if (Updater.InstallFolder is null)
             {
                 InstallButton.IsEnabled = false;
-                InstallButton.Content = "Only available in the published app";
+                InstallButton.Content = L.T("Only available in the published app");
             }
             UpdateBar.IsOpen = true;
         }
         catch (Exception ex)
         {
-            UpdateCard.Description = $"Couldn't check for updates: {ex.Message}";
+            UpdateCard.Description = L.F("Couldn't check for updates: {0}", ex.Message);
         }
         finally
         {
@@ -116,7 +164,7 @@ public sealed partial class AboutPage : Page
 
         _download = new CancellationTokenSource();
         InstallButton.IsEnabled = CheckButton.IsEnabled = false;
-        InstallButton.Content = "Downloading…";
+        InstallButton.Content = L.T("Downloading…");
         DownloadProgress.Visibility = Visibility.Visible;
         DownloadProgress.Value = 0;
         try
@@ -124,7 +172,7 @@ public sealed partial class AboutPage : Page
             var progress = new Progress<double>(p => DownloadProgress.Value = p);
             var files = await Updater.DownloadAsync(_update, progress, _download.Token);
 
-            InstallButton.Content = "Installing…";
+            InstallButton.Content = L.T("Installing…");
             SettingsStore.Flush();
             Updater.Install(files, installFolder, _update.Version); // closes this app; the island restarts on the new version
         }
@@ -136,11 +184,11 @@ public sealed partial class AboutPage : Page
         {
             Log.Error("Update failed", ex);
             UpdateBar.Severity = InfoBarSeverity.Error;
-            UpdateBar.Title = "The update couldn't be installed";
+            UpdateBar.Title = L.T("The update couldn't be installed");
             UpdateBar.Message = ex is System.ComponentModel.Win32Exception
-                ? "Administrator permission is needed to update this folder."
+                ? L.T("Administrator permission is needed to update this folder.")
                 : ex.Message;
-            InstallButton.Content = "Try again";
+            InstallButton.Content = L.T("Try again");
             InstallButton.IsEnabled = CheckButton.IsEnabled = true;
             DownloadProgress.Visibility = Visibility.Collapsed;
         }

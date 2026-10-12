@@ -65,7 +65,10 @@ It also includes:
 - **Two at once.** When two things are active, the second shows as a small circle next to the pill, as on the iPhone. Click it to swap them.
 - **Alerts.** "Claude is done", "Claude needs you", "Timer done", messages and add-on pop-ups open and close again by themselves. They stay open while your mouse is over them.
 - **Stays out of the way.** It never takes keyboard focus, you can click through everything around the pill, and it hides while a fullscreen game or video is playing.
-- **Lightweight.** Native C# and WPF, with a separate WinUI 3 settings app. Spotify works without a Spotify account or API key.
+- **Lightweight.** Native C# and WPF, with a separate WinUI 3 settings app. Spotify works without a Spotify account or API key. With Windows' battery saver on, it redraws less often and skips blur and shadow effects.
+- **Any display.** Pick the display it sits on, or let it follow your mouse. It stays below a taskbar that's at the top of the screen.
+- **English and Dutch.** It follows your Windows language, or you can pick one under **Settings → General**.
+- **Accessible.** Screen readers announce new pop-ups and can read what the island shows. **Ctrl+Alt+O** opens it without a mouse.
 
 ## Install
 
@@ -109,7 +112,8 @@ This publishes the island and the settings app (`publish\Settings\`) in one go. 
 | **Click an alert** | Opens the app it came from and closes the alert. |
 | **Right-click the island or tray icon** | Quick timers, Pause, **Settings…** and Quit. |
 | **Double-click the tray icon** | Opens the settings app. |
-| **Press Ctrl+Alt+I** | Hides the island, or brings it back. You can change the shortcut under **Settings → General**. |
+| **Press Ctrl+Alt+I** | Hides the island, or brings it back. It stays hidden after a restart until you show it again. |
+| **Press Ctrl+Alt+O** | Opens what the island shows (or the timer picker), and closes it again. Both shortcuts can be changed under **Settings → General**. |
 
 ## Setting up the integrations
 
@@ -201,6 +205,14 @@ powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.
 
 This sets the version in both projects, builds the app, zips it as `DI4W-v1.1.0-win-x64.zip`, builds the installer `DI4W-v1.1.0-win-x64.msi` from the same files, commits and pushes the version change, and creates the `v1.1.0` release with both attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), or `-Draft` to review the release before publishing it. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
 
+It also writes the winget manifests (`artifacts/release/winget`). Once the release is public, submit them to the Windows Package Manager with:
+
+```bash
+powershell -ExecutionPolicy Bypass -File tools/winget-submit.ps1 -Version 1.1.0
+```
+
+This opens a pull request to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) from your account; after Microsoft's checks and a review, `winget install aangeraakt.DynamicIsland` works.
+
 The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip` or `*-win-x64.msi` asset. Drafts and pre-releases are ignored.
 
 ### Tests
@@ -211,13 +223,50 @@ dotnet test tests/DynamicIsland.Tests
 
 The tests cover the logic that decides things: shortcut parsing, chat-app and call detection, release and calendar parsing (including recurring meetings), the alert queue, and how settings are saved and recovered. GitHub Actions runs them, builds both apps and the installer on every push, and keeps the result as a downloadable `DI4W-build` artifact for 14 days.
 
+## Island API
+
+Scripts and apps on your PC can show their own pop-ups and progress in the island. The API listens on `http://127.0.0.1:47823` (the Claude Code port), only for programs on this PC. Requests from web pages are refused. You can turn it off under **Settings → Add-ons → Island API**.
+
+**A pop-up**
+
+```bash
+curl -X POST http://127.0.0.1:47823/alert -H "Content-Type: application/json" -d "{\"title\":\"Backup done\",\"message\":\"312 files\",\"icon\":\"success\",\"color\":\"green\"}"
+```
+
+| Field | | |
+|---|---|---|
+| `title` | required | Up to 120 characters |
+| `message` | optional | Second line, up to 300 characters |
+| `icon` | optional | `info`, `success`, `warning`, `error`, `download`, `upload`, `music`, `mail`, `timer`, `bell`, `code`, `home`, `star`, `heart`, `game`, `sync` |
+| `color` | optional | `blue`, `green`, `orange`, `red`, `purple`, `teal`, `yellow`, `indigo`, `gray`, or `#RRGGBB` |
+| `seconds` | optional | How long it stays, 1–60 (default 5) |
+| `sticky` | optional | `true` keeps it open until the mouse has been over it |
+| `url` | optional | An `http`/`https` link opened when the pop-up is clicked |
+
+**Progress in the pill**
+
+```bash
+curl -X POST http://127.0.0.1:47823/progress -H "Content-Type: application/json" -d "{\"id\":\"backup\",\"title\":\"Backing up\",\"value\":0.4,\"detail\":\"120 of 312 files\"}"
+curl -X POST http://127.0.0.1:47823/progress -H "Content-Type: application/json" -d "{\"id\":\"backup\",\"done\":true,\"message\":\"Backup done\"}"
+```
+
+`value` is 0 to 1 (leave it out for "busy" without a percentage). Up to 5 at once; one that isn't updated for 15 minutes disappears by itself. At most 30 pop-ups a minute.
+
+**PowerShell helper** (in the app's `tools` folder):
+
+```powershell
+island.ps1 -Title "Backup done" -Icon success -Color green
+island.ps1 -Progress backup -Title "Backing up" -Value 0.4 -Detail "120 of 312 files"
+island.ps1 -Progress backup -Done -Title "Backup done"
+```
+
 ## Troubleshooting
 
 - **Nothing happens with Spotify.** Make sure Spotify is the desktop app, not the web player, or turn on **Show any media player**.
 - **The audio bars don't move.** The bars react to what your speakers play. If no audio device is available, they fall back to a simple animation.
 - **No Claude alerts.** Start a *new* Claude Code session after installing the hooks, and check that the island is running.
 - **No Discord pop-ups.** Check that notification access is allowed under **Windows Settings → Privacy & security → Notifications**, and that Discord's own notifications are on.
-- **Something else.** Look in the log folder (settings app → **About** → **Logs**).
+- **Something else.** Use **Settings → About → Report a problem**. It fills in a GitHub issue with your version and the latest log lines, which you can check and edit before anything is sent.
 
 ## Project structure
 
@@ -244,7 +293,10 @@ tests/DynamicIsland.Tests/      xUnit tests
 tools/
 ├─ claude-hook.ps1             called by Claude Code hooks, forwards events to the island
 ├─ install-claude-hooks.ps1    adds/removes the hooks in ~/.claude/settings.json
-└─ publish-release.ps1         builds the app and publishes a GitHub release for the updater
+├─ island.ps1                  shows pop-ups and progress through the Island API
+├─ publish-release.ps1         builds the app and installer and publishes a GitHub release
+├─ winget-manifest.ps1         writes the winget manifests for a release
+└─ winget-submit.ps1           submits a release to winget (pull request to microsoft/winget-pkgs)
 ```
 
 ### Adding your own activity

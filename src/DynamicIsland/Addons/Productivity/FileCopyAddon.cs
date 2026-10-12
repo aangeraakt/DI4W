@@ -26,6 +26,8 @@ public sealed partial class FileCopyAddon : Addon
     private DispatcherTimer? _poll;
     private int _lastPercent = -1;
 
+    private static TimeSpan IdleInterval => Power.Interval(TimeSpan.FromSeconds(3), 2);
+
     public FileCopyAddon(AddonContext context) : base(context)
     {
         _track = new Border { Width = BarWidth, Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Track, Child = _fill, Margin = new Thickness(0, 12, 0, 0) };
@@ -42,7 +44,7 @@ public sealed partial class FileCopyAddon : Addon
 
     protected override void Start()
     {
-        _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _poll = new DispatcherTimer { Interval = IdleInterval };
         _poll.Tick += (_, _) => Check();
         _poll.Start();
     }
@@ -64,6 +66,7 @@ public sealed partial class FileCopyAddon : Addon
             if (_lastPercent >= 90) AnnounceDone();
             _lastPercent = -1;
             _activity.Hide();
+            if (_poll is not null) _poll.Interval = IdleInterval; // nothing copying: look less often
             return;
         }
 
@@ -72,11 +75,12 @@ public sealed partial class FileCopyAddon : Addon
         _title.Text = title;
         _fill.Width = Math.Max(6, BarWidth * percent.Value / 100.0);
         _activity.Show();
+        if (_poll is not null) _poll.Interval = TimeSpan.FromSeconds(1); // copying: keep the percentage live
     }
 
     private void AnnounceDone() => Show(new IslandAlert
     {
-        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Teal, 46, 20), "Files copied", "File Explorer finished"),
+        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Teal, 46, 20), L.T("Files copied"), L.T("File Explorer finished")),
         Size = new Size(340, 76),
         Duration = TimeSpan.FromSeconds(3),
     });

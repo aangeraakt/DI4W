@@ -27,9 +27,9 @@ public sealed class GameModeAddon : Addon
         var grid = new Grid { Margin = new Thickness(22, 16, 22, 14) };
         for (var i = 0; i < 4; i++) grid.ColumnDefinitions.Add(new ColumnDefinition());
         AddStat(grid, 0, "GPU", _gpu);
-        AddStat(grid, 1, "GPU temp", _temp);
+        AddStat(grid, 1, L.T("GPU temp"), _temp);
         AddStat(grid, 2, "CPU", _cpuText);
-        AddStat(grid, 3, "Memory", _ram);
+        AddStat(grid, 3, L.T("Memory"), _ram);
 
         _activity = new AddonActivity("Game", 10,
             Ui.Glyph("", 16, Ui.Green), _compact, Ui.Glyph("", 13, Ui.Green), grid,
@@ -44,7 +44,7 @@ public sealed class GameModeAddon : Addon
     protected override void Start()
     {
         _cpu.Read();
-        if (SystemLoad.GpuTemperature() is null) SetStatus("GPU temperature needs an NVIDIA graphics card; load is still shown.", problem: false);
+        if (SystemLoad.GpuTemperature() is null) SetStatus(L.T("GPU temperature needs an NVIDIA graphics card; load is still shown."), problem: false);
         _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         _poll.Tick += (_, _) => Check();
         _poll.Start();

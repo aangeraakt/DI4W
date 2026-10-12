@@ -29,7 +29,7 @@ public sealed class ClaudeActivity : Activity
 
     private readonly TextBlock _compactText = Ui.Text("", 14, FontWeights.SemiBold, Ui.ClaudeOrange, tabular: true);
     private readonly StackPanel _sessionList = new() { Margin = new Thickness(0, 6, 0, 0) };
-    private readonly TextBlock _expandedTitle = Ui.Text("Claude is working", 16, FontWeights.SemiBold, Ui.White);
+    private readonly TextBlock _expandedTitle = Ui.Text(L.T("Claude is working"), 16, FontWeights.SemiBold, Ui.White);
 
     public ClaudeActivity(ActivityManager manager, AppSettings settings)
     {
@@ -78,7 +78,7 @@ public sealed class ClaudeActivity : Activity
                 break;
 
             case "notify":
-                var message = Str(payload, "message") ?? "Claude needs your input";
+                var message = Str(payload, "message") ?? L.T("Claude needs your input");
                 ShowNeedsInput(project, message);
                 break;
 
@@ -106,10 +106,10 @@ public sealed class ClaudeActivity : Activity
 
         var oldest = _sessions.Values.MinBy(x => x.Started)!;
         _compactText.Text = _sessions.Count > 1
-            ? $"{_sessions.Count} working"
+            ? L.F("{0} working", _sessions.Count)
             : Ui.FormatTime(DateTime.Now - oldest.Started);
 
-        _expandedTitle.Text = _sessions.Count > 1 ? $"Claude is working · {_sessions.Count} sessions" : "Claude is working";
+        _expandedTitle.Text = _sessions.Count > 1 ? L.F("Claude is working · {0} sessions", _sessions.Count) : L.T("Claude is working");
         _sessionList.Children.Clear();
         foreach (var session in _sessions.Values.OrderBy(x => x.Started).Take(4))
         {
@@ -142,7 +142,7 @@ public sealed class ClaudeActivity : Activity
         var subtitle = took is { } t && t.TotalSeconds >= 1 ? $"{project} · {Ui.FormatTime(t)}" : project;
         _manager.ShowAlert(new IslandAlert
         {
-            Content = Ui.AlertView(icon, "Claude is done", subtitle, accessory: check),
+            Content = Ui.AlertView(icon, L.T("Claude is done"), subtitle, accessory: check),
             Size = new Size(380, 76),
             Duration = TimeSpan.FromSeconds(5),
         });
@@ -156,7 +156,7 @@ public sealed class ClaudeActivity : Activity
         var dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(6), Background = Ui.Amber, Margin = new Thickness(0, 0, 6, 0) };
         _manager.ShowAlert(new IslandAlert
         {
-            Content = Ui.AlertView(icon, $"Claude needs you · {project}", message, Ui.Amber, dot),
+            Content = Ui.AlertView(icon, L.F("Claude needs you · {0}", project), message, Ui.Amber, dot),
             Size = new Size(420, 80),
             StickyUntilHover = true,
         });

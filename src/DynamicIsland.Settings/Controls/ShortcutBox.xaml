@@ -1,0 +1,12 @@
+<UserControl x:Class="DynamicIsland.SettingsApp.Controls.ShortcutBox"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Click, press a key combination, done. Esc cancels; Clear turns the shortcut off. -->
+    <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button x:Name="RecordButton" MinWidth="150" Click="OnRecord"
+                PreviewKeyDown="OnKeyDown" LostFocus="OnLostFocus"
+                ToolTipService.ToolTip="Click, then press the keys you want" />
+        <Button x:Name="ClearButton" Content="Clear" Click="OnClear" />
+    </StackPanel>
+</UserControl>

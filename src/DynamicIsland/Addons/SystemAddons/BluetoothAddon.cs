@@ -46,7 +46,7 @@ public sealed class BluetoothAddon : Addon
         _watcher.EnumerationCompleted += (_, _) => Context.Ui(() => _ready = true); // don't announce what's already connected
         _watcher.Stopped += (w, _) => Context.Ui(() =>
         {
-            if (w.Status == DeviceWatcherStatus.Aborted) SetStatus("Bluetooth is off or this PC has no Bluetooth.", problem: false);
+            if (w.Status == DeviceWatcherStatus.Aborted) SetStatus(L.T("Bluetooth is off or this PC has no Bluetooth."), problem: false);
         });
         _watcher.Start();
     }
@@ -84,7 +84,7 @@ public sealed class BluetoothAddon : Addon
     private async Task Announce(string id, Device device, bool connected)
     {
         int? battery = connected ? await ReadBattery(id, device) : null;
-        var subtitle = connected ? battery is { } b ? $"Connected · {b}% battery" : "Connected" : "Disconnected";
+        var subtitle = connected ? battery is { } b ? L.F("Connected · {0}% battery", b) : L.T("Connected") : L.T("Disconnected");
         var icon = Ui.GlyphCircle(GlyphFor(device), connected ? Ui.Blue : Ui.ButtonBg, 46, 20);
         Show(new IslandAlert
         {

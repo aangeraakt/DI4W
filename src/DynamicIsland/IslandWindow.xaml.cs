@@ -2,6 +2,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -70,6 +72,10 @@ public partial class IslandWindow : Window
     public bool KeepVisibleInFullscreen { get; set; }
 
     private const int HideHotkeyId = 1;
+    private const int ExpandHotkeyId = 2;
+
+    /// <summary>Closes a view opened with the keyboard shortcut (there's no mouse to move away).</summary>
+    private readonly DispatcherTimer _keyboardCollapse = new() { Interval = TimeSpan.FromSeconds(8) };
 
     public IslandWindow(ActivityManager manager, AppSettings settings)
     {
@@ -114,9 +120,20 @@ public partial class IslandWindow : Window
             Collapse();
         };
 
+        _keyboardCollapse.Tick += (_, _) =>
+        {
+            _keyboardCollapse.Stop();
+            if (!_hovering) Collapse();
+        };
+
         _housekeeping = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _housekeeping.Tick += (_, _) => Housekeeping();
         _housekeeping.Start();
+
+        // Battery saver: drop the soft shadow (re-rendered by the CPU on every frame) and check less often.
+        _shadowEffect = Shadow.Effect;
+        Power.Changed += ApplyPower;
+        ApplyPower();
 
         _manager.Changed += Refresh;
         Refresh();
@@ -132,6 +149,13 @@ public partial class IslandWindow : Window
     }
 
     private bool _quitting;
+    private readonly Effect? _shadowEffect;
+
+    private void ApplyPower()
+    {
+        Shadow.Effect = Power.Saving ? null : _shadowEffect;
+        _housekeeping.Interval = Power.Interval(TimeSpan.FromSeconds(1), 2);
+    }
 
     // ───────────────────────────── public API ─────────────────────────────
 
@@ -168,20 +192,49 @@ public partial class IslandWindow : Window
     }
 
     /// <summary>Registers (or replaces) the global hide/show shortcut. Empty or invalid text just removes it.</summary>
-    public void RegisterHideHotkey(string? shortcut)
+    public void RegisterHideHotkey(string? shortcut) => RegisterHotkey(HideHotkeyId, shortcut, "Hide");
+
+    /// <summary>The shortcut that opens/closes the expanded view, so the island can be used without a mouse.</summary>
+    public void RegisterExpandHotkey(string? shortcut) => RegisterHotkey(ExpandHotkeyId, shortcut, "Expand");
+
+    private void RegisterHotkey(int id, string? shortcut, string purpose)
     {
         var hwnd = new WindowInteropHelper(this).EnsureHandle();
-        Win32.UnregisterHotKey(hwnd, HideHotkeyId);
+        Win32.UnregisterHotKey(hwnd, id);
         if (!Hotkey.TryParse(shortcut, out var modifiers, out var key)) return;
 
-        if (Win32.RegisterHotKey(hwnd, HideHotkeyId, modifiers | Win32.MOD_NOREPEAT, key))
+        if (Win32.RegisterHotKey(hwnd, id, modifiers | Win32.MOD_NOREPEAT, key))
         {
-            Log.Info($"Hide shortcut: {shortcut}");
+            Log.Info($"{purpose} shortcut: {shortcut}");
         }
         else
         {
             Log.Error($"Hotkey registration failed for {shortcut} (error {Marshal.GetLastWin32Error()}); another app probably uses it");
         }
+    }
+
+    /// <summary>Opens the current activity (or the timer picker when idle), or closes it again.</summary>
+    public void ToggleExpanded()
+    {
+        if (_expanded || _panel is not null)
+        {
+            Collapse();
+            return;
+        }
+        if (_manager.Active.Count > 0)
+        {
+            _expanded = true;
+            Refresh();
+        }
+        else if (IdlePanelFactory is not null)
+        {
+            var (view, size) = IdlePanelFactory();
+            OpenPanel(view, size);
+        }
+        // Without a mouse over it, it would stay open forever; close after a while like a hover-out would.
+        _collapseTimer.Stop();
+        _keyboardCollapse.Stop();
+        _keyboardCollapse.Start();
     }
 
     public void ApplyScale()
@@ -271,6 +324,7 @@ public partial class IslandWindow : Window
         }
 
         _driver.Kick();
+        UpdateAccessibleName();
     }
 
     private void SwitchLayers(Mode mode, Size size)
@@ -301,12 +355,19 @@ public partial class IslandWindow : Window
     private static void FadeOut(FrameworkElement layer)
     {
         layer.IsHitTestVisible = false;
-        layer.BeginAnimation(OpacityProperty, new DoubleAnimation(0, TimeSpan.FromMilliseconds(110)));
+        var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(110));
+        // Once invisible, hide it for real: screen readers would otherwise still read its old text.
+        fade.Completed += (_, _) =>
+        {
+            if (!layer.IsHitTestVisible) layer.Visibility = Visibility.Hidden;
+        };
+        layer.BeginAnimation(OpacityProperty, fade);
     }
 
     private static void Reveal(FrameworkElement layer, double delaySeconds)
     {
         layer.IsHitTestVisible = true;
+        layer.Visibility = Visibility.Visible;
         var delay = TimeSpan.FromSeconds(delaySeconds);
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
@@ -327,6 +388,12 @@ public partial class IslandWindow : Window
         scale.BeginAnimation(ScaleTransform.ScaleXProperty, grow);
         scale.BeginAnimation(ScaleTransform.ScaleYProperty, grow);
 
+        // The blur-in is drawn by the CPU (transparent windows aren't GPU-drawn); skip it on battery saver.
+        if (Power.Saving)
+        {
+            layer.Effect = null;
+            return;
+        }
         var blur = new BlurEffect { Radius = 10, RenderingBias = RenderingBias.Performance };
         layer.Effect = blur;
         var unblur = new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(260)) { BeginTime = delay, EasingFunction = ease };
@@ -423,8 +490,9 @@ public partial class IslandWindow : Window
     // ───────────────────────────── window plumbing ─────────────────────────────
 
     /// <summary>
-    /// Snaps the window to the top-center of the primary monitor. Works in physical pixels so it stays correct
-    /// after the display scale changes (WPF's SystemParameters keep the startup DPI's values).
+    /// Snaps the window to the top-center of its display (main display, the chosen one, or the one with the mouse).
+    /// Works in physical pixels so it stays correct after the display scale changes (WPF's SystemParameters keep
+    /// the startup DPI's values).
     /// </summary>
     private void PositionOnScreen()
     {
@@ -434,10 +502,11 @@ public partial class IslandWindow : Window
         Win32.SetWindowPos(hwnd, Win32.HWND_TOPMOST, 0, 0, 0, 0, Win32.SWP_NOSIZE | Win32.SWP_NOACTIVATE);
     }
 
-    private static (int X, int Y) Anchor(int pixelWidth)
+    private (int X, int Y) Anchor(int pixelWidth)
     {
-        var mon = Win32.PrimaryMonitorRect();
-        return (mon.Left + (mon.Width - pixelWidth) / 2, mon.Top);
+        var display = Displays.Choose(_settings.Monitor);
+        // Top of the work area: below a taskbar (or other bar) docked at the top, at the very top otherwise.
+        return (display.Bounds.Left + (display.Bounds.Width - pixelWidth) / 2, display.Work.Top);
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
@@ -466,6 +535,10 @@ public partial class IslandWindow : Window
                 HotkeyPressed?.Invoke();
                 handled = true;
                 break;
+            case Win32.WM_HOTKEY when wParam.ToInt32() == ExpandHotkeyId:
+                ToggleExpanded();
+                handled = true;
+                break;
             case Win32.WM_DISPLAYCHANGE:
             case Win32.WM_SETTINGCHANGE:
                 Dispatcher.BeginInvoke(PositionOnScreen, DispatcherPriority.Background);
@@ -473,6 +546,62 @@ public partial class IslandWindow : Window
         }
         return IntPtr.Zero;
     }
+
+    // ───────────────────────────── accessibility ─────────────────────────────
+
+    private object? _announced;
+
+    /// <summary>
+    /// Gives screen readers a description of what the island shows ("Timer, 4:32", "Download complete,
+    /// photos.zip") and announces new alerts, which otherwise only appear visually.
+    /// </summary>
+    private void UpdateAccessibleName()
+    {
+        var primary = _manager.Active.Count > 0 ? _manager.Active[0] : null;
+        var text = _mode switch
+        {
+            Mode.Alert => Words(AlertLayer.Content),
+            Mode.Expanded or Mode.Panel => Words(ExpandedLayer.Content),
+            Mode.Compact when primary is not null => Join(primary.Name, primary.AccessibleDetail ?? "", Words(LeadingHost.Content), Words(TrailingHost.Content)),
+            _ => Join(L.T("Dynamic Island"), Words(IdleLeadingHost.Content), Words(IdleTrailingHost.Content)),
+        };
+        if (Announcer.Text != text) Announcer.Text = text;
+
+        if (_mode == Mode.Alert && !ReferenceEquals(_announced, _manager.CurrentAlert))
+        {
+            _announced = _manager.CurrentAlert;
+            UIElementAutomationPeer.CreatePeerForElement(Announcer)?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+        }
+    }
+
+    private static string Join(params string[] parts) => string.Join(", ", parts.Where(p => p.Length > 0));
+
+    /// <summary>The readable text inside a view: text blocks and tooltips, without icon-font glyphs.</summary>
+    private static string Words(object? root)
+    {
+        var words = new List<string>();
+        void Walk(object? node)
+        {
+            switch (node)
+            {
+                case TextBlock t when !string.IsNullOrWhiteSpace(t.Text) && !IsGlyph(t.Text):
+                    words.Add(t.Text.Trim());
+                    break;
+                case FrameworkElement { ToolTip: string tip } when !string.IsNullOrWhiteSpace(tip):
+                    words.Add(tip);
+                    break;
+            }
+            if (node is DependencyObject d)
+            {
+                foreach (var child in LogicalTreeHelper.GetChildren(d)) Walk(child);
+            }
+        }
+        Walk(root);
+        return string.Join(", ", words.Distinct());
+    }
+
+    // Icons are drawn with private-use characters of the icon font; there's nothing to read there.
+    private static bool IsGlyph(string text) => text.Trim().All(c => c is >= '' and <= '');
 
     private void KeepOnTop()
     {
@@ -484,6 +613,7 @@ public partial class IslandWindow : Window
     {
         var hwnd = new WindowInteropHelper(this).Handle;
         if (hwnd == IntPtr.Zero) return;
+        UpdateAccessibleName(); // keeps changing text (countdowns) current for screen readers
 
         // Require two checks in a row so a window that covers the screen for a moment doesn't make it blink away.
         _fullscreenTicks = _settings.HideInFullscreen && !KeepVisibleInFullscreen && Win32.IsFullscreenAppRunning()
@@ -497,7 +627,8 @@ public partial class IslandWindow : Window
         if (!hide)
         {
             Win32.ReassertTopmost(hwnd);
-            // Safety net: if the position drifted anyway (e.g. a missed display change), snap back.
+            // Snap back if the position drifted (a missed display change), and follow the mouse to another
+            // display when the island is set to.
             Win32.GetWindowRect(hwnd, out var r);
             if ((r.Left, r.Top) != Anchor(r.Width)) PositionOnScreen();
         }

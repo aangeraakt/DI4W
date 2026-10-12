@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using DynamicIsland.Core;
 using DynamicIsland.Updates;
 using Microsoft.Win32;
+using DynamicIsland.Settings;
 
 namespace DynamicIsland.SettingsApp;
 
@@ -54,7 +55,7 @@ public static class Updater
     /// <summary>Downloads and verifies the update. Returns the .msi, or the folder with the unpacked new files.</summary>
     public static async Task<string> DownloadAsync(UpdateInfo update, IProgress<double> progress, CancellationToken cancel)
     {
-        var asset = PickAsset(update) ?? throw new InvalidDataException("This release has no Windows package.");
+        var asset = PickAsset(update) ?? throw new InvalidDataException(L.T("This release has no Windows package."));
         var folder = Path.Combine(WorkFolder, update.Version.ToString());
         if (Directory.Exists(folder)) Directory.Delete(folder, recursive: true);
         Directory.CreateDirectory(folder);
@@ -67,11 +68,11 @@ public static class Updater
         var extracted = Path.Combine(folder, "files");
         ZipFile.ExtractToDirectory(file, extracted);
         var island = Directory.EnumerateFiles(extracted, "DynamicIsland.exe", SearchOption.AllDirectories).FirstOrDefault()
-                     ?? throw new InvalidDataException("The update package doesn't contain DynamicIsland.exe.");
+                     ?? throw new InvalidDataException(L.T("The update package doesn't contain DynamicIsland.exe."));
         var root = Path.GetDirectoryName(island)!;
         if (!File.Exists(Path.Combine(root, "Settings", "DynamicIsland.Settings.exe")))
         {
-            throw new InvalidDataException("The update package doesn't contain the settings app.");
+            throw new InvalidDataException(L.T("The update package doesn't contain the settings app."));
         }
         return root;
     }
@@ -96,7 +97,7 @@ public static class Updater
 
         if (new FileInfo(target).Length != asset.Size)
         {
-            throw new InvalidDataException("The download is incomplete. Please try again.");
+            throw new InvalidDataException(L.T("The download is incomplete. Please try again."));
         }
         if (asset.Sha256 is { } expected)
         {
@@ -104,7 +105,7 @@ public static class Updater
             var actual = Convert.ToHexString(await SHA256.HashDataAsync(stream, cancel));
             if (!actual.Equals(expected, StringComparison.OrdinalIgnoreCase))
             {
-                throw new InvalidDataException("The download doesn't match the release (checksum mismatch), so it wasn't installed.");
+                throw new InvalidDataException(L.T("The download doesn't match the release (checksum mismatch), so it wasn't installed."));
             }
         }
     }

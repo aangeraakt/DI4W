@@ -58,16 +58,16 @@ public sealed class NetworkAddon : Addon
 
         if (!now.Online && before.Online)
         {
-            Announce("No internet connection", now.Name is null ? "Check your Wi-Fi or cable" : $"Connected to {now.Name}, but no internet",
+            Announce(L.T("No internet connection"), now.Name is null ? L.T("Check your Wi-Fi or cable") : L.F("Connected to {0}, but no internet", now.Name),
                      now.Wireless ? Wifi : Ethernet, Ui.Red);
         }
         else if (now.Online && !before.Online)
         {
-            Announce("Back online", now.Name ?? "", now.Wireless ? Wifi : Ethernet, Ui.Green);
+            Announce(L.T("Back online"), now.Name ?? "", now.Wireless ? Wifi : Ethernet, Ui.Green);
         }
         else if (now.Online && now.Name != before.Name && now.Name is not null)
         {
-            Announce($"Connected to {now.Name}", now.Wireless ? "Wi-Fi" : "Ethernet", now.Wireless ? Wifi : Ethernet, Ui.Blue);
+            Announce(L.F("Connected to {0}", now.Name), now.Wireless ? "Wi-Fi" : "Ethernet", now.Wireless ? Wifi : Ethernet, Ui.Blue);
         }
     }
 

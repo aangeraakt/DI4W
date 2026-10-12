@@ -16,47 +16,89 @@ public sealed partial class AddonsPage : Page
     {
         InitializeComponent();
 
-        Section("System");
-        Toggle(nameof(AddonSettings.Volume), "Volume", "A bar in the island when you change the volume.", "");
-        Toggle(nameof(AddonSettings.Brightness), "Brightness", "A bar when the screen brightness changes. Works on built-in laptop and tablet screens.", "");
-        Expander(nameof(AddonSettings.Battery), "Battery", "Charger plugged in or unplugged, and warnings when the battery runs low. Laptops only.", "",
-                 Number("Low battery warning at", nameof(AddonSettings.BatteryLowPercent), 5, 50, "%"),
-                 Number("Very low battery warning at", nameof(AddonSettings.BatteryCriticalPercent), 1, 30, "%"));
-        Toggle(nameof(AddonSettings.Bluetooth), "Bluetooth devices", "Headphones, mice and controllers connecting or disconnecting, with their battery level when available.", "");
-        Toggle(nameof(AddonSettings.UsbDrives), "USB drives", "USB sticks and external drives plugged in or removed. Click the pop-up to open the drive.", "");
-        Toggle(nameof(AddonSettings.Network), "Wi-Fi and internet", "When the internet drops or comes back, and which network you joined.", "");
-        Toggle(nameof(AddonSettings.PrivacyIndicators), "Microphone and camera in use", "An orange (microphone) or green (camera) dot next to the island while an app uses them.", "");
-        Toggle(nameof(AddonSettings.LockKeys), "Caps Lock and Num Lock", "A short message when you turn them on or off.", "");
-        Toggle(nameof(AddonSettings.PerformanceWarnings), "Heavy load warnings", "When the CPU or memory stays nearly full, or an NVIDIA graphics card runs hot.", "");
+        Section(L.T("System"));
+        Toggle(nameof(AddonSettings.Volume), L.T("Volume"), L.T("A bar in the island when you change the volume."), "");
+        Toggle(nameof(AddonSettings.Brightness), L.T("Brightness"), L.T("A bar when the screen brightness changes. Works on built-in laptop and tablet screens."), "");
+        Expander(nameof(AddonSettings.Battery), L.T("Battery"), L.T("Charger plugged in or unplugged, and warnings when the battery runs low. Laptops only."), "",
+                 Number(L.T("Low battery warning at"), nameof(AddonSettings.BatteryLowPercent), 5, 50, L.T("%")),
+                 Number(L.T("Very low battery warning at"), nameof(AddonSettings.BatteryCriticalPercent), 1, 30, L.T("%")));
+        Toggle(nameof(AddonSettings.Bluetooth), L.T("Bluetooth devices"), L.T("Headphones, mice and controllers connecting or disconnecting, with their battery level when available."), "");
+        Toggle(nameof(AddonSettings.UsbDrives), L.T("USB drives"), L.T("USB sticks and external drives plugged in or removed. Click the pop-up to open the drive."), "");
+        Toggle(nameof(AddonSettings.Network), L.T("Wi-Fi and internet"), L.T("When the internet drops or comes back, and which network you joined."), "");
+        Toggle(nameof(AddonSettings.PrivacyIndicators), L.T("Microphone and camera in use"), L.T("An orange (microphone) or green (camera) dot next to the island while an app uses them."), "");
+        Toggle(nameof(AddonSettings.LockKeys), L.T("Caps Lock and Num Lock"), L.T("A short message when you turn them on or off."), "");
+        Toggle(nameof(AddonSettings.PerformanceWarnings), L.T("Heavy load warnings"), L.T("When the CPU or memory stays nearly full, or an NVIDIA graphics card runs hot."), "");
 
-        Section("Productivity");
-        Expander(nameof(AddonSettings.Calendar), "Calendar", "Meeting reminders with a Join button for Teams, Zoom, Google Meet and Webex.", "",
+        Section(L.T("Productivity"));
+        Expander(nameof(AddonSettings.Calendar), L.T("Calendar"), L.T("Meeting reminders with a Join button for Teams, Zoom, Google Meet and Webex."), "",
                  CalendarFeeds(),
-                 Number("Remind me before a meeting", nameof(AddonSettings.CalendarReminderMinutes), 1, 60, "min"));
-        Expander(null, "Focus timer", "Lengths for the Pomodoro timer. Start it by clicking the empty island and choosing Focus.", "",
-                 Number("Focus", nameof(AddonSettings.FocusMinutes), 1, 180, "min"),
-                 Number("Break", nameof(AddonSettings.BreakMinutes), 1, 60, "min"),
-                 Number("Long break", nameof(AddonSettings.LongBreakMinutes), 1, 120, "min"),
-                 Number("Long break after", nameof(AddonSettings.SessionsBeforeLongBreak), 1, 12, "sessions"));
-        Toggle(nameof(AddonSettings.Clipboard), "Clipboard", "A short preview of what you copy. Passwords from password managers are never shown.", "");
-        Toggle(nameof(AddonSettings.Screenshots), "Screenshots", "A thumbnail when a screenshot is saved. Click it to open the image.", "");
-        Toggle(nameof(AddonSettings.Downloads), "Downloads", "Download progress in the island and \"Download complete\" for files saved to your Downloads folder.", "");
-        Toggle(nameof(AddonSettings.FileCopy), "File copies", "Progress of copies and moves in File Explorer.", "");
+                 Number(L.T("Remind me before a meeting"), nameof(AddonSettings.CalendarReminderMinutes), 1, 60, L.T("min")));
+        Expander(null, L.T("Focus timer"), L.T("Lengths for the Pomodoro timer. Start it by clicking the empty island and choosing Focus."), "",
+                 Number(L.T("Focus"), nameof(AddonSettings.FocusMinutes), 1, 180, L.T("min")),
+                 Number(L.T("Break"), nameof(AddonSettings.BreakMinutes), 1, 60, L.T("min")),
+                 Number(L.T("Long break"), nameof(AddonSettings.LongBreakMinutes), 1, 120, L.T("min")),
+                 Number(L.T("Long break after"), nameof(AddonSettings.SessionsBeforeLongBreak), 1, 12, L.T("sessions")));
+        Toggle(nameof(AddonSettings.Clipboard), L.T("Clipboard"), L.T("A short preview of what you copy. Passwords from password managers are never shown."), "");
+        Toggle(nameof(AddonSettings.Screenshots), L.T("Screenshots"), L.T("A thumbnail when a screenshot is saved. Click it to open the image."), "");
+        Toggle(nameof(AddonSettings.Downloads), L.T("Downloads"), L.T("Download progress in the island and \"Download complete\" for files saved to your Downloads folder."), "");
+        Toggle(nameof(AddonSettings.FileCopy), L.T("File copies"), L.T("Progress of copies and moves in File Explorer."), "");
 
-        Section("Alerts");
-        Toggle(nameof(AddonSettings.DoNotDisturb), "Follow Do Not Disturb", "While Windows' Do Not Disturb is on, only alarms and timers pop up, and a moon shows in the island.", "");
-        Toggle(nameof(AddonSettings.WindowsUpdate), "Windows Update", "Tells you when a restart is needed to finish installing updates.", "");
+        Section(L.T("Alerts"));
+        Toggle(nameof(AddonSettings.DoNotDisturb), L.T("Follow Do Not Disturb"), L.T("While Windows' Do Not Disturb is on, only alarms and timers pop up, and a moon shows in the island."), "");
+        Toggle(nameof(AddonSettings.WindowsUpdate), L.T("Windows Update"), L.T("Tells you when a restart is needed to finish installing updates."), "");
 
-        Section("Info");
-        Expander(nameof(AddonSettings.Weather), "Weather", "The temperature in the empty island, and a warning before it starts raining. From Open-Meteo, no account needed.", "",
+        Section(L.T("Info"));
+        Expander(nameof(AddonSettings.Weather), L.T("Weather"), L.T("The temperature in the empty island, and a warning before it starts raining. From Open-Meteo, no account needed."), "",
                  WeatherLocation(),
-                 Switch("Fahrenheit", "Show °F instead of °C.", nameof(AddonSettings.WeatherFahrenheit)),
-                 Switch("Rain alerts", "\"Rain in about 15 min\" when it's dry now.", nameof(AddonSettings.RainAlerts)));
-        Toggle(nameof(AddonSettings.GameMode), "Game mode",
-               "Keeps the island visible over fullscreen games, with GPU load and temperature. Frame rate isn't available: Windows only shares it with programs running as administrator.",
+                 Switch(L.T("Fahrenheit"), L.T("Show °F instead of °C."), nameof(AddonSettings.WeatherFahrenheit)),
+                 Switch(L.T("Rain alerts"), L.T("\"Rain in about 15 min\" when it's dry now."), nameof(AddonSettings.RainAlerts)));
+        Toggle(nameof(AddonSettings.GameMode), L.T("Game mode"),
+               L.T("Keeps the island visible over fullscreen games, with GPU load and temperature. Frame rate isn't available: Windows only shares it with programs running as administrator."),
                "");
 
+        Section(L.T("For developers"));
+        Expander(nameof(AddonSettings.IslandApi), L.T("Island API"),
+                 L.T("Lets scripts and apps on this PC show their own pop-ups and progress in the island. Web pages can't use it. The island restarts to apply this."),
+                 "", ApiExample());
+
         WatchStatus();
+    }
+
+    private static SettingsCard ApiExample()
+    {
+        var port = SettingsStore.Current.ClaudePort;
+        var example =
+            $"curl -X POST http://127.0.0.1:{port}/alert -H \"Content-Type: application/json\" -d \"{{\\\"title\\\":\\\"Backup done\\\",\\\"icon\\\":\\\"success\\\"}}\"\n\n" +
+            L.T("PowerShell (the helper script is in the app's tools folder):") + "\n" +
+            "island.ps1 -Title \"Backup done\" -Icon success\n" +
+            "island.ps1 -Progress backup -Title \"Backing up\" -Value 0.4";
+        var text = new TextBlock
+        {
+            Text = example,
+            IsTextSelectionEnabled = true,
+            TextWrapping = TextWrapping.Wrap,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily("Cascadia Mono, Consolas"),
+            FontSize = 12,
+        };
+        var copy = new Button { Content = L.T("Copy example") };
+        copy.Click += (_, _) =>
+        {
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(example);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+        };
+        var docs = new HyperlinkButton { Content = L.T("Full API description"), NavigateUri = new Uri("https://github.com/aangeraakt/DI4W#island-api") };
+        return new SettingsCard
+        {
+            Header = L.T("Examples"),
+            ContentAlignment = ContentAlignment.Vertical,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children = { text, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { copy, docs } } },
+            },
+        };
     }
 
     // ───────────────────────────── building blocks ─────────────────────────────
@@ -176,7 +218,7 @@ public sealed partial class AddonsPage : Page
     {
         var list = new StackPanel { Spacing = 4 };
         var input = new TextBox { PlaceholderText = "https://…/calendar.ics", MinWidth = 320 };
-        var add = new Button { Content = "Add", Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        var add = new Button { Content = L.T("Add"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
 
         void Render()
         {
@@ -188,7 +230,7 @@ public sealed partial class AddonsPage : Page
                 row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 row.Children.Add(new TextBlock { Text = Shorten(feed), VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
                 var remove = new Button { Content = new FontIcon { Glyph = "", FontSize = 14 }, Padding = new Thickness(8) };
-                ToolTipService.SetToolTip(remove, "Remove");
+                ToolTipService.SetToolTip(remove, L.T("Remove"));
                 remove.Click += (_, _) =>
                 {
                     SettingsStore.Change(s => s.Addons.CalendarFeeds.Remove(feed));
@@ -224,14 +266,13 @@ public sealed partial class AddonsPage : Page
         {
             TextWrapping = TextWrapping.Wrap,
             Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-            Text = "Paste a calendar link (.ics). Outlook: Settings → Calendar → Shared calendars → Publish a calendar → copy the ICS link. " +
-                   "Google Calendar: Settings → your calendar → Secret address in iCal format. Anyone with the link can see the calendar, so keep it private.",
+            Text = L.T("Paste a calendar link (.ics). Outlook: Settings → Calendar → Shared calendars → Publish a calendar → copy the ICS link. Google Calendar: Settings → your calendar → Secret address in iCal format. Anyone with the link can see the calendar, so keep it private."),
         };
         var entry = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { input, add } };
 
         return new SettingsCard
         {
-            Header = "Calendar links",
+            Header = L.T("Calendar links"),
             ContentAlignment = ContentAlignment.Vertical,
             HorizontalContentAlignment = HorizontalAlignment.Stretch,
             Content = new StackPanel { Spacing = 10, Children = { help, list, entry } },
@@ -250,7 +291,7 @@ public sealed partial class AddonsPage : Page
 
     private static SettingsCard WeatherLocation()
     {
-        var box = new TextBox { Text = Options.WeatherLocation, PlaceholderText = "e.g. Amsterdam", MinWidth = 220 };
+        var box = new TextBox { Text = Options.WeatherLocation, PlaceholderText = L.T("e.g. Amsterdam"), MinWidth = 220 };
         void Save() => SettingsStore.Change(s => s.Addons.WeatherLocation = box.Text.Trim());
         box.LostFocus += (_, _) => Save();
         box.KeyDown += (_, e) =>
@@ -259,8 +300,8 @@ public sealed partial class AddonsPage : Page
         };
         return new SettingsCard
         {
-            Header = "City",
-            Description = "Leave empty to use your Windows location (Settings → Privacy & security → Location → let desktop apps access your location).",
+            Header = L.T("City"),
+            Description = L.T("Leave empty to use your Windows location (Settings → Privacy & security → Location → let desktop apps access your location)."),
             Content = box,
         };
     }

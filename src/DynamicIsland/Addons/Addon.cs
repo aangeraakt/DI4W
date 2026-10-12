@@ -104,7 +104,7 @@ public abstract class Addon
             Log.Error($"Add-on {Name} failed to {(wanted ? "start" : "stop")}", ex);
             if (wanted) TryStop();
             Running = false;
-            if (wanted) SetStatus($"Couldn't start: {ex.Message}");
+            if (wanted) SetStatus(L.F("Couldn't start: {0}", ex.Message));
         }
         StatusChanged?.Invoke(); // Running changed
     }

@@ -37,7 +37,13 @@ public sealed class PrivacyAddon : Addon
         Context.Window.IndicatorPanel.Children.Add(_camDot);
         Context.Window.IndicatorPanel.Children.Add(_micDot);
         Render();
-        _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
+
+        // Windows signals an event when anything under the consent store changes (an app starts or stops using
+        // the mic/camera), so there's no need to poll. A slow check stays as a safety net.
+        _store = Registry.CurrentUser.OpenSubKey(Store);
+        _changed = new AutoResetEvent(false);
+        Watch();
+        _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
         _poll.Tick += (_, _) => Check();
         _poll.Start();
     }
@@ -46,9 +52,39 @@ public sealed class PrivacyAddon : Addon
     {
         _poll?.Stop();
         _poll = null;
+        _wait?.Unregister(null);
+        _wait = null;
+        _store?.Dispose();
+        _store = null;
+        _changed?.Dispose();
+        _changed = null;
         Context.Window.IndicatorPanel.Children.Remove(_camDot);
         Context.Window.IndicatorPanel.Children.Remove(_micDot);
     }
+
+    private RegistryKey? _store;
+    private AutoResetEvent? _changed;
+    private RegisteredWaitHandle? _wait;
+
+    /// <summary>Asks Windows for one change notification. Called on the UI thread, which lives as long as the
+    /// island (a notification is cancelled when the thread that asked for it ends).</summary>
+    private void Watch()
+    {
+        if (_store is null || _changed is null) return;
+        const uint REG_NOTIFY_CHANGE_NAME = 1, REG_NOTIFY_CHANGE_LAST_SET = 4;
+        if (RegNotifyChangeKeyValue(_store.Handle, watchSubtree: true, REG_NOTIFY_CHANGE_NAME | REG_NOTIFY_CHANGE_LAST_SET,
+                                    _changed.SafeWaitHandle, asynchronous: true) != 0) return;
+        _wait = ThreadPool.RegisterWaitForSingleObject(_changed, (_, _) => Context.Ui(() =>
+        {
+            if (_store is null) return; // stopped meanwhile
+            Check();
+            Watch();
+        }), null, Timeout.Infinite, executeOnlyOnce: true);
+    }
+
+    [System.Runtime.InteropServices.DllImport("advapi32.dll")]
+    private static extern int RegNotifyChangeKeyValue(Microsoft.Win32.SafeHandles.SafeRegistryHandle key, bool watchSubtree,
+                                                      uint filter, Microsoft.Win32.SafeHandles.SafeWaitHandle evt, bool asynchronous);
 
     private void Check()
     {
@@ -60,16 +96,16 @@ public sealed class PrivacyAddon : Addon
         _cam = cam;
         Render();
 
-        if (newCam is not null) Announce($"{newCam} is using the camera", "", Ui.Green);
-        else if (newMic is not null) Announce($"{newMic} is using the microphone", "", Ui.Orange);
+        if (newCam is not null) Announce(L.F("{0} is using the camera", newCam), "", Ui.Green);
+        else if (newMic is not null) Announce(L.F("{0} is using the microphone", newMic), "", Ui.Orange);
     }
 
     private void Render()
     {
         _micDot.Visibility = _mic.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         _camDot.Visibility = _cam.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        _micDot.ToolTip = _mic.Count > 0 ? "Microphone: " + string.Join(", ", _mic) : null;
-        _camDot.ToolTip = _cam.Count > 0 ? "Camera: " + string.Join(", ", _cam) : null;
+        _micDot.ToolTip = _mic.Count > 0 ? L.T("Microphone") + ": " + string.Join(", ", _mic) : null;
+        _camDot.ToolTip = _cam.Count > 0 ? L.T("Camera") + ": " + string.Join(", ", _cam) : null;
     }
 
     private void Announce(string text, string glyph, Brush color)

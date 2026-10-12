@@ -62,7 +62,7 @@ public sealed class UsbDriveAddon : Addon
             if (!drive.IsReady) return;
             var name = Remember(drive);
             var size = drive.TotalSize > 0 ? $" · {FormatSize(drive.TotalSize)}" : "";
-            Announce(name, $"Connected ({letter}:){size}", connected: true, () => Process.Start("explorer.exe", drive.RootDirectory.FullName));
+            Announce(name, L.F("Connected ({0}:)", letter) + size, connected: true, () => Process.Start("explorer.exe", drive.RootDirectory.FullName));
         }
         catch (Exception ex)
         {
@@ -72,9 +72,9 @@ public sealed class UsbDriveAddon : Addon
 
     private void Removed(char letter)
     {
-        var name = _names.TryGetValue(letter, out var n) ? n : $"Drive {letter}:";
+        var name = _names.TryGetValue(letter, out var n) ? n : L.F("Drive {0}:", letter);
         _names.Remove(letter);
-        Announce(name, "Removed", connected: false, null);
+        Announce(name, L.T("Removed"), connected: false, null);
     }
 
     private string Remember(DriveInfo d)
@@ -82,13 +82,13 @@ public sealed class UsbDriveAddon : Addon
         var letter = d.Name[0];
         try
         {
-            var name = d.IsReady && !string.IsNullOrWhiteSpace(d.VolumeLabel) ? d.VolumeLabel : $"Drive {letter}:";
+            var name = d.IsReady && !string.IsNullOrWhiteSpace(d.VolumeLabel) ? d.VolumeLabel : L.F("Drive {0}:", letter);
             _names[letter] = name;
             return name;
         }
         catch
         {
-            return $"Drive {letter}:";
+            return L.F("Drive {0}:", letter);
         }
     }
 

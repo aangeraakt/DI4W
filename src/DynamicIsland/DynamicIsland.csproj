@@ -38,7 +38,7 @@
 
   <!-- Claude Code hook scripts ship next to the exe so the settings app can install them. -->
   <ItemGroup>
-    <None Include="..\..\tools\claude-hook.ps1;..\..\tools\install-claude-hooks.ps1" Link="tools\%(Filename)%(Extension)"
+    <None Include="..\..\tools\claude-hook.ps1;..\..\tools\install-claude-hooks.ps1;..\..\tools\island.ps1" Link="tools\%(Filename)%(Extension)"
           CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 

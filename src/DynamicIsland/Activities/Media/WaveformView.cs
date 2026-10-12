@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
+using DynamicIsland.Core;
 
 namespace DynamicIsland.Activities.Media;
 
@@ -22,7 +23,12 @@ public sealed class WaveformView : FrameworkElement
     static WaveformView()
     {
         Timer.Tick += (_, _) => TickAll();
+        // 30 redraws a second normally; 10 while battery saver is on.
+        ApplyPower();
+        Power.Changed += ApplyPower;
     }
+
+    private static void ApplyPower() => Timer.Interval = TimeSpan.FromMilliseconds(Power.Saving ? 100 : 33);
 
     public WaveformView(double width, double height)
     {

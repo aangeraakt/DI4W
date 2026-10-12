@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
     public MainWindow(string? startPage = null)
     {
         InitializeComponent();
+        Translator.Apply(Content); // title bar and navigation
         Title = App.WindowTitle;
 
         ExtendsContentIntoTitleBar = true;
@@ -69,6 +70,7 @@ public sealed partial class MainWindow : Window
         if (args.SelectedItem is NavigationViewItem { Tag: string tag } && Pages.TryGetValue(tag, out var page))
         {
             ContentFrame.Navigate(page, null, new EntranceNavigationTransitionInfo());
+            Translator.Apply(ContentFrame.Content);
         }
     }
 

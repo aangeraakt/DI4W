@@ -28,7 +28,7 @@ public sealed class PerformanceAddon : Addon
     protected override void Start()
     {
         _cpu.Read();
-        _poll = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _poll = new DispatcherTimer { Interval = Power.Interval(TimeSpan.FromSeconds(5)) };
         _poll.Tick += async (_, _) => await Check();
         _poll.Start();
     }
@@ -46,19 +46,19 @@ public sealed class PerformanceAddon : Addon
         if (Sustained("cpu", cpu > 90, TimeSpan.FromMinutes(1)))
         {
             var top = await SystemLoad.TopCpuProcessAsync();
-            Warn("cpu", "CPU is working hard", $"{cpu:0}% for a minute{(top is null ? "" : $" · mostly {top}")}");
+            Warn("cpu", L.T("CPU is working hard"), L.F("{0:0}% for a minute", cpu) + (top is null ? "" : L.F(" · mostly {0}", top)));
         }
 
         var memory = SystemLoad.MemoryPercent();
         if (Sustained("memory", memory > 90, TimeSpan.FromSeconds(30)))
         {
             var top = SystemLoad.TopMemoryProcess();
-            Warn("memory", "Memory almost full", $"{memory}% in use{(top is null ? "" : $" · {top} uses the most")}");
+            Warn("memory", L.T("Memory almost full"), L.F("{0}% in use", memory) + (top is null ? "" : L.F(" · {0} uses the most", top)));
         }
 
         if (SystemLoad.GpuTemperature() is { } temp && Sustained("gpu", temp >= 85, TimeSpan.FromSeconds(20)))
         {
-            Warn("gpu", "GPU is running hot", $"{temp} °C");
+            Warn("gpu", L.T("GPU is running hot"), $"{temp} °C");
         }
     }
 

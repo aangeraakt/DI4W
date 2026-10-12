@@ -62,7 +62,7 @@ public sealed class DownloadsAddon : Addon
 
         _tick = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _tick.Tick += (_, _) => Update(measureSpeed: true);
-        _tick.Start();
+        // Started only while something is downloading (see Update), so an idle island has no timer running.
     }
 
     protected override void Stop()
@@ -129,16 +129,17 @@ public sealed class DownloadsAddon : Addon
         if (_active.Count == 0)
         {
             _activity.Hide();
+            _tick?.Stop();
             return;
         }
 
         var total = _active.Values.Sum(d => d.Speed);
         _compact.Text = _active.Count > 1
-            ? $"{_active.Count} files"
+            ? L.F("{0} files", _active.Count)
             : total > 0 ? $"{UsbDriveAddon.FormatSize((long)total)}/s" : UsbDriveAddon.FormatSize(_active.Values.First().Size);
 
         _list.Children.Clear();
-        _list.Children.Add(Ui.Text("Downloading", 14, FontWeights.SemiBold, Ui.Blue));
+        _list.Children.Add(Ui.Text(L.T("Downloading"), 14, FontWeights.SemiBold, Ui.Blue));
         foreach (var d in _active.Values.Take(3))
         {
             var row = new Grid { Margin = new Thickness(0, 6, 0, 0) };
@@ -153,6 +154,7 @@ public sealed class DownloadsAddon : Addon
             _list.Children.Add(row);
         }
         _activity.Show();
+        if (_tick is { IsEnabled: false }) _tick.Start();
     }
 
     private void Finished(string path)
@@ -169,7 +171,7 @@ public sealed class DownloadsAddon : Addon
 
         Show(new IslandAlert
         {
-            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), "Download complete",
+            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Download complete"),
                                    $"{Path.GetFileName(path)}{(size > 0 ? $" · {UsbDriveAddon.FormatSize(size)}" : "")}"),
             Size = new Size(380, 76),
             Duration = TimeSpan.FromSeconds(4),
@@ -182,6 +184,6 @@ public sealed class DownloadsAddon : Addon
     internal static string DisplayName(string path)
     {
         var name = Path.GetFileNameWithoutExtension(path);
-        return name.StartsWith("Unconfirmed ", StringComparison.OrdinalIgnoreCase) ? "New download" : name;
+        return name.StartsWith("Unconfirmed ", StringComparison.OrdinalIgnoreCase) ? L.T("New download") : name;
     }
 }

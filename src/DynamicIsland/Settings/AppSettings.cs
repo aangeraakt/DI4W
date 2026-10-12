@@ -45,6 +45,18 @@ public sealed class AppSettings
     /// <summary>Global shortcut that hides/shows the island, e.g. "Ctrl+Alt+I". Empty = no shortcut.</summary>
     public string HideHotkey { get; set; } = "Ctrl+Alt+I";
 
+    /// <summary>Global shortcut that opens/closes the island's expanded view (keyboard and screen reader use).</summary>
+    public string ExpandHotkey { get; set; } = "Ctrl+Alt+O";
+
+    /// <summary>Hidden with the shortcut or "Pause island"; remembered so it stays hidden after a restart.</summary>
+    public bool Paused { get; set; }
+
+    /// <summary>"" = Windows' language, "en" = English, "nl" = Dutch.</summary>
+    public string Language { get; set; } = "";
+
+    /// <summary>Which display: "" = main display, "Mouse" = the one with the mouse, or a device name (\\.\DISPLAY2).</summary>
+    public string Monitor { get; set; } = "";
+
     /// <summary>Look for new releases on GitHub now and then and announce them in the island.</summary>
     public bool AutoCheckUpdates { get; set; } = true;
 
@@ -210,6 +222,10 @@ public sealed class AddonSettings
 
     /// <summary>Keep the island visible over fullscreen games and show GPU/CPU load. Off by default.</summary>
     public bool GameMode { get; set; } = false;
+
+    // Developers
+    /// <summary>Local API (127.0.0.1, same port as Claude Code) so scripts can show alerts and progress.</summary>
+    public bool IslandApi { get; set; } = true;
 }
 
 /// <summary>

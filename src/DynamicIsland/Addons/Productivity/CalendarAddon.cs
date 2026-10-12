@@ -84,20 +84,20 @@ public sealed partial class CalendarAddon : Addon
     {
         if (feeds == 0)
         {
-            SetStatus("Add a calendar link below to get meeting reminders.");
+            SetStatus(L.T("Add a calendar link below to get meeting reminders."));
         }
         else if (failed > 0)
         {
             SetStatus(feeds == 1
-                ? $"Couldn't load your calendar: {failure}"
-                : $"{failed} of {feeds} calendar links couldn't be loaded: {failure}");
+                ? L.F("Couldn't load your calendar: {0}", failure)
+                : L.F("{0} of {1} calendar links couldn't be loaded: {2}", failed, feeds, failure));
         }
         else
         {
             var next = _meetings.Where(m => m.Start > DateTime.UtcNow).OrderBy(m => m.Start).FirstOrDefault();
             SetStatus(next is null
-                ? "No meetings in the next 24 hours."
-                : $"Next: {next.Title} at {next.Start.ToLocalTime():t}", problem: false);
+                ? L.T("No meetings in the next 24 hours.")
+                : L.F("Next: {0} at {1:t}", next.Title, next.Start.ToLocalTime()), problem: false);
         }
     }
 
@@ -112,7 +112,7 @@ public sealed partial class CalendarAddon : Addon
             var start = occurrence.Period.StartTime.AsUtc;
             var end = occurrence.Period.EndTime?.AsUtc ?? start.AddMinutes(30);
             var join = JoinLink($"{ev.Location} {ev.Url} {ev.Description}");
-            result.Add(new Meeting($"{ev.Uid}|{start:O}", ev.Summary ?? "Meeting", start, end, ev.Location, join));
+            result.Add(new Meeting($"{ev.Uid}|{start:O}", ev.Summary ?? L.T("Meeting"), start, end, ev.Location, join));
         }
         return result;
     }
@@ -140,14 +140,14 @@ public sealed partial class CalendarAddon : Addon
     private void Announce(Meeting m, DateTime now)
     {
         var minutes = (int)Math.Ceiling((m.Start - now).TotalMinutes);
-        var when = minutes <= 0 ? "Starting now" : $"In {minutes} min";
+        var when = minutes <= 0 ? L.T("Starting now") : L.F("In {0} min", minutes);
         var times = $"{m.Start.ToLocalTime():t}–{m.End.ToLocalTime():t}";
         var place = !string.IsNullOrWhiteSpace(m.Location) && m.JoinUrl is null ? $" · {m.Location}" : "";
 
         FrameworkElement? join = null;
         if (m.JoinUrl is { } url)
         {
-            var button = Ui.Button(Ui.Text("Join", 14, FontWeights.SemiBold, System.Windows.Media.Brushes.Black),
+            var button = Ui.Button(Ui.Text(L.T("Join"), 14, FontWeights.SemiBold, System.Windows.Media.Brushes.Black),
                                    () => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }), Ui.Green, 64, 32);
             button.Padding = new Thickness(0);
             join = button;

@@ -50,8 +50,8 @@ public sealed class WindowsUpdateAddon : Addon
         _snoozedUntil = DateTime.UtcNow.AddHours(4); // until the user picks, don't ask again soon
 
         IslandAlert? alert = null;
-        var later = Ui.Button(Ui.Text("Later", 13, FontWeights.SemiBold, Ui.White), () => Context.Manager.DismissAlert(alert), Ui.ButtonBg, 64, 32);
-        var restart = Ui.Button(Ui.Text("Restart", 13, FontWeights.SemiBold, System.Windows.Media.Brushes.Black), () =>
+        var later = Ui.Button(Ui.Text(L.T("Later"), 13, FontWeights.SemiBold, Ui.White), () => Context.Manager.DismissAlert(alert), Ui.ButtonBg, 64, 32);
+        var restart = Ui.Button(Ui.Text(L.T("Restart"), 13, FontWeights.SemiBold, System.Windows.Media.Brushes.Black), () =>
         {
             Context.Manager.DismissAlert(alert);
             Restart();
@@ -61,8 +61,8 @@ public sealed class WindowsUpdateAddon : Addon
 
         alert = new IslandAlert
         {
-            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), "Updates are ready",
-                                   "Restart to finish installing", accessory: new StackPanel { Orientation = Orientation.Horizontal, Children = { later, restart } }),
+            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Updates are ready"),
+                                   L.T("Restart to finish installing"), accessory: new StackPanel { Orientation = Orientation.Horizontal, Children = { later, restart } }),
             Size = new Size(440, 76),
             Duration = TimeSpan.FromSeconds(15),
             StickyUntilHover = true,
@@ -73,10 +73,10 @@ public sealed class WindowsUpdateAddon : Addon
     private void Restart()
     {
         _restarting = true;
-        Run("shutdown.exe", "/r /t 60 /c \"Restarting to finish Windows updates\"");
+        Run("shutdown.exe", $"/r /t 60 /c \"{L.T("Restarting to finish Windows updates")}\"");
 
         IslandAlert? countdown = null;
-        var cancel = Ui.Button(Ui.Text("Cancel", 13, FontWeights.SemiBold, Ui.White), () =>
+        var cancel = Ui.Button(Ui.Text(L.T("Cancel"), 13, FontWeights.SemiBold, Ui.White), () =>
         {
             Run("shutdown.exe", "/a");
             _restarting = false;
@@ -85,8 +85,8 @@ public sealed class WindowsUpdateAddon : Addon
         cancel.Padding = new Thickness(0);
         countdown = new IslandAlert
         {
-            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), "Restarting in 1 minute",
-                                   "Save your work", accessory: cancel),
+            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Restarting in 1 minute"),
+                                   L.T("Save your work"), accessory: cancel),
             Size = new Size(400, 76),
             Sticky = true,
             BreaksThroughQuiet = true,

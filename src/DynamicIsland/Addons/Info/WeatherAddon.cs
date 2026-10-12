@@ -91,21 +91,21 @@ public sealed class WeatherAddon : Addon
             _icon.Text = symbol;
             _icon.Foreground = color;
             _temp.Text = $"{Math.Round(temp)}°";
-            _view.ToolTip = $"{description}, {Math.Round(temp)}° in {where.Value.Place}";
+            _view.ToolTip = L.F("{0}, {1}° in {2}", description, Math.Round(temp), where.Value.Place);
             Context.SetIdleTrailing(_view);
-            SetStatus($"{description}, {Math.Round(temp)}° in {where.Value.Place}", problem: false);
+            SetStatus(L.F("{0}, {1}° in {2}", description, Math.Round(temp), where.Value.Place), problem: false);
 
             if (Options.RainAlerts && !IsWet(code)) CheckRain(json.RootElement, where.Value.Place);
         }
         catch (HttpRequestException ex)
         {
             Log.Info($"Weather update failed: {ex.Message}");
-            SetStatus("Couldn't reach the weather service. Trying again in 15 minutes.");
+            SetStatus(L.T("Couldn't reach the weather service. Trying again in 15 minutes."));
         }
         catch (Exception ex)
         {
             Log.Info($"Weather update failed: {ex.Message}");
-            SetStatus($"Weather update failed: {ex.Message}");
+            SetStatus(L.F("Weather update failed: {0}", ex.Message));
         }
     }
 
@@ -125,7 +125,7 @@ public sealed class WeatherAddon : Addon
             Content = Ui.AlertView(new Border { Width = 46, Height = 46, CornerRadius = new CornerRadius(23), Background = Ui.Blue,
                                                 Child = new TextBlock { Text = "☂", FontFamily = Symbols, FontSize = 22, Foreground = Ui.White,
                                                                         HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center } },
-                                   $"Rain in about {(first + 1) * 15} min", place),
+                                   L.F("Rain in about {0} min", (first + 1) * 15), place),
             Size = new Size(360, 76),
             Duration = TimeSpan.FromSeconds(6),
         });
@@ -143,7 +143,7 @@ public sealed class WeatherAddon : Addon
             if (!json.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0)
             {
                 Log.Info($"Weather: place '{query}' not found");
-                SetStatus($"Couldn't find \"{query}\". Check the spelling, or try a bigger city nearby.");
+                SetStatus(L.F("Couldn't find \"{0}\". Check the spelling, or try a bigger city nearby.", query));
                 return null;
             }
             var r = results[0];
@@ -155,12 +155,12 @@ public sealed class WeatherAddon : Addon
             if (await Geolocator.RequestAccessAsync() != GeolocationAccessStatus.Allowed)
             {
                 Log.Info("Weather: no city set and Windows location is off");
-                SetStatus("Set your city below. (Windows location is off for desktop apps.)");
+                SetStatus(L.T("Set your city below. (Windows location is off for desktop apps.)"));
                 return null;
             }
             var pos = await new Geolocator { DesiredAccuracy = PositionAccuracy.Default }
                 .GetGeopositionAsync(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10));
-            _location = ("", pos.Coordinate.Point.Position.Latitude, pos.Coordinate.Point.Position.Longitude, "your area");
+            _location = ("", pos.Coordinate.Point.Position.Latitude, pos.Coordinate.Point.Position.Longitude, L.T("your area"));
         }
         return (_location.Value.Lat, _location.Value.Lon, _location.Value.Place);
     }
@@ -170,13 +170,13 @@ public sealed class WeatherAddon : Addon
     /// <summary>WMO weather code -> symbol, color and words.</summary>
     private static (string Symbol, Brush Color, string Words) Describe(int code, bool day) => code switch
     {
-        0 => day ? ("☀", Ui.Amber, "Clear") : ("☾", Ui.Teal, "Clear"),
-        1 or 2 => day ? ("⛅", Ui.Amber, "Partly cloudy") : ("☁", Ui.Grey, "Partly cloudy"),
-        3 => ("☁", Ui.Grey, "Cloudy"),
-        45 or 48 => ("☁", Ui.Grey, "Fog"),
-        >= 51 and <= 67 or >= 80 and <= 82 => ("☂", Ui.Blue, "Rain"),
-        >= 71 and <= 77 or 85 or 86 => ("❄", Ui.White, "Snow"),
-        >= 95 => ("⛈", Ui.Amber, "Thunderstorm"),
-        _ => ("☁", Ui.Grey, "Cloudy"),
+        0 => day ? ("☀", Ui.Amber, L.T("Clear sky")) : ("☾", Ui.Teal, L.T("Clear sky")),
+        1 or 2 => day ? ("⛅", Ui.Amber, L.T("Partly cloudy")) : ("☁", Ui.Grey, L.T("Partly cloudy")),
+        3 => ("☁", Ui.Grey, L.T("Cloudy")),
+        45 or 48 => ("☁", Ui.Grey, L.T("Fog")),
+        >= 51 and <= 67 or >= 80 and <= 82 => ("☂", Ui.Blue, L.T("Rain")),
+        >= 71 and <= 77 or 85 or 86 => ("❄", Ui.White, L.T("Snow")),
+        >= 95 => ("⛈", Ui.Amber, L.T("Thunderstorm")),
+        _ => ("☁", Ui.Grey, L.T("Cloudy")),
     };
 }
