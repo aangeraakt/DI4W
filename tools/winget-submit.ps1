@@ -35,6 +35,10 @@ git clone --filter=blob:none --no-checkout --depth 1 "https://github.com/$user/w
 if ($LASTEXITCODE -ne 0) { throw "Cloning your fork failed." }
 Push-Location $work
 try {
+    # Commit as the GitHub account with its private no-reply address: the pull request is public.
+    $userId = gh api user --jq .id
+    git config user.name $user
+    git config user.email "$userId+$user@users.noreply.github.com"
     git sparse-checkout set --no-cone "/manifests/a/aangeraakt/"
     git remote add upstream https://github.com/microsoft/winget-pkgs.git
     git fetch --depth 1 upstream master
@@ -48,7 +52,9 @@ try {
     git add $relative
     $title = if ($isNew) { "New package: $id version $Version" } else { "New version: $id version $Version" }
     git commit -m $title
-    git push origin $branch
+    if ($LASTEXITCODE -ne 0) { throw "Committing the manifests failed." }
+    # Force: a branch left by an earlier, failed attempt is replaced (it's only ever used for this pull request).
+    git push --force origin $branch
     if ($LASTEXITCODE -ne 0) { throw "Pushing to your fork failed." }
 
     gh pr create --repo microsoft/winget-pkgs --head "${user}:$branch" --title $title `
