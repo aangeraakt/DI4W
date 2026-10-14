@@ -110,9 +110,13 @@ foreach ($arch in $architectures) {
 
     # The installer, built from the same files.
     # --no-incremental: the installer's name changes per version, which an incremental build doesn't notice.
-    dotnet build installer --no-incremental -c Release -p:AppVersion=$Version "-p:AppDir=$app" -p:Arch=$arch -o $out
+    # Each architecture in its own output folder: the rebuild cleans its output folder, which would otherwise
+    # delete the installer built for the previous architecture.
+    $installerOut = Join-Path $out "installer-$arch"
+    dotnet build installer --no-incremental -c Release -p:AppVersion=$Version "-p:AppDir=$app" -p:Arch=$arch -o $installerOut
     if ($LASTEXITCODE -ne 0) { throw "Building the installer failed ($arch)." }
     $msi = Join-Path $out "DI4W-$tag-win-$arch.msi"
+    Move-Item (Join-Path $installerOut "DI4W-$tag-win-$arch.msi") $msi -Force -ErrorAction Stop
     if (-not (Test-Path $msi)) { throw "Installer not found at $msi." }
     Sign-Files @($msi)
     Write-Host ("Installer: {0} ({1:N1} MB)" -f $msi, ((Get-Item $msi).Length / 1MB))
