@@ -30,6 +30,7 @@ public sealed class StopwatchActivity : Activity
 
     public override string Name => L.T("Stopwatch");
     public override int Priority => 28;
+    public override string Kind => "Stopwatch";
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
 

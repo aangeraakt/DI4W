@@ -18,13 +18,22 @@ public static partial class ProblemReport
     /// <summary>GitHub (and browsers) cut off very long links; longer reports go through the clipboard.</summary>
     public const int MaxBodyInLink = 6000;
 
-    public static string Build()
+    /// <param name="crash">The island's last crash (crash.txt), included when reporting one.</param>
+    public static string Build(string? crash = null)
     {
         var sb = new StringBuilder();
         sb.AppendLine("**What happened?**");
         sb.AppendLine("<!-- Describe what you did, what you expected, and what happened instead. -->");
         sb.AppendLine();
         sb.AppendLine();
+        if (crash is not null)
+        {
+            sb.AppendLine("**Crash**");
+            sb.AppendLine("```");
+            sb.AppendLine(crash.Length > 3000 ? crash[..3000] + "\n…" : crash);
+            sb.AppendLine("```");
+            sb.AppendLine();
+        }
         sb.AppendLine("**System**");
         sb.AppendLine($"- Dynamic Island {UpdateChecker.CurrentVersion} ({InstallType()})");
         sb.AppendLine($"- {WindowsVersion()}, .NET {Environment.Version}");

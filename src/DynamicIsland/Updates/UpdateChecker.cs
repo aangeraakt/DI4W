@@ -15,7 +15,8 @@ public sealed record UpdateInfo(Version Version, string Notes, string PageUrl, R
 
 /// <summary>
 /// Looks for updates in the GitHub releases of the repository (compiled into both the island and the settings app).
-/// A release counts when its tag is a version ("v1.2.0") and it has a "*-win-x64.zip" or "*-win-x64.msi" asset.
+/// A release counts when its tag is a version ("v1.2.0") and it has a "*-win-x64.zip" or "*-win-x64.msi" asset
+/// (or "-win-arm64" ones for the ARM64 build, so each build stays on its own architecture).
 /// </summary>
 public static class UpdateChecker
 {
@@ -40,7 +41,11 @@ public static class UpdateChecker
     }
 
     /// <summary>Reads GitHub's "latest release" JSON; null when it isn't newer than <paramref name="current"/> or has no package.</summary>
-    public static UpdateInfo? Parse(string json, Version current)
+    /// <summary>"x64" or "arm64": the build this is (an x64 build running emulated on ARM stays x64).</summary>
+    public static string Architecture { get; } =
+        System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "arm64" : "x64";
+
+    public static UpdateInfo? Parse(string json, Version current, string? architecture = null)
     {
         using var doc = JsonDocument.Parse(json);
         var release = doc.RootElement;
@@ -61,8 +66,9 @@ public static class UpdateChecker
                 asset.GetProperty("size").GetInt64(),
                 digest?.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) == true ? digest[7..] : null);
 
-            if (name.EndsWith("-win-x64.zip", StringComparison.OrdinalIgnoreCase)) zip = file;
-            else if (name.EndsWith("-win-x64.msi", StringComparison.OrdinalIgnoreCase)) msi = file;
+            var arch = architecture ?? Architecture;
+            if (name.EndsWith($"-win-{arch}.zip", StringComparison.OrdinalIgnoreCase)) zip = file;
+            else if (name.EndsWith($"-win-{arch}.msi", StringComparison.OrdinalIgnoreCase)) msi = file;
         }
         if (zip is null && msi is null) return null; // a release without a Windows package
 

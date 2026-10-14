@@ -335,7 +335,20 @@ public partial class IslandWindow : Window
         }
 
         _driver.Kick();
+        UpdateHoverTarget();
         UpdateAccessibleName();
+    }
+
+    private Activity? _hoverTarget;
+
+    /// <summary>Tells the activity in the compact pill when the mouse is over it (music shows its buttons then).</summary>
+    private void UpdateHoverTarget()
+    {
+        var target = _hovering && _mode == Mode.Compact && _manager.Active.Count > 0 ? _manager.Active[0] : null;
+        if (target == _hoverTarget) return;
+        _hoverTarget?.OnHover(false);
+        target?.OnHover(true);
+        _hoverTarget = target;
     }
 
     private void SwitchLayers(Mode mode, Size size)
@@ -588,31 +601,7 @@ public partial class IslandWindow : Window
     private static string Join(params string[] parts) => string.Join(", ", parts.Where(p => p.Length > 0));
 
     /// <summary>The readable text inside a view: text blocks and tooltips, without icon-font glyphs.</summary>
-    private static string Words(object? root)
-    {
-        var words = new List<string>();
-        void Walk(object? node)
-        {
-            switch (node)
-            {
-                case TextBlock t when !string.IsNullOrWhiteSpace(t.Text) && !IsGlyph(t.Text):
-                    words.Add(t.Text.Trim());
-                    break;
-                case FrameworkElement { ToolTip: string tip } when !string.IsNullOrWhiteSpace(tip):
-                    words.Add(tip);
-                    break;
-            }
-            if (node is DependencyObject d)
-            {
-                foreach (var child in LogicalTreeHelper.GetChildren(d)) Walk(child);
-            }
-        }
-        Walk(root);
-        return string.Join(", ", words.Distinct());
-    }
-
-    // Icons are drawn with private-use characters of the icon font; there's nothing to read there.
-    private static bool IsGlyph(string text) => text.Trim().All(c => c is >= '' and <= '');
+    private static string Words(object? root) => string.Join(", ", ViewText.Texts(root));
 
     private void KeepOnTop()
     {

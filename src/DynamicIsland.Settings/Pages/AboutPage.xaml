@@ -68,6 +68,19 @@
                 </tk:SettingsCard.ActionIcon>
             </tk:SettingsCard>
 
+            <tk:SettingsCard Header="Back up settings"
+                             Description="Save all settings to a file, or load them on another PC: add-ons, shortcuts, apps, calendar links. The file contains your calendar links, so keep it private.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE777;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Export…" Click="OnExport" />
+                    <Button Content="Import…" Click="OnImport" />
+                </StackPanel>
+            </tk:SettingsCard>
+
+            <InfoBar x:Name="BackupBar" IsClosable="True" IsOpen="False" />
+
             <tk:SettingsCard Header="Logs" Description="Look here if something isn't working." IsClickEnabled="True" Click="OnOpenLogs">
                 <tk:SettingsCard.HeaderIcon>
                     <FontIcon Glyph="&#xE9F9;" />
@@ -83,6 +96,14 @@
                     <FontIcon Glyph="&#xEBE8;" />
                 </tk:SettingsCard.HeaderIcon>
                 <Button Content="Report a problem…" Click="OnReport" />
+            </tk:SettingsCard>
+
+            <tk:SettingsCard Header="Offer to report crashes"
+                             Description="If the island ever closes because of an error, it asks the next time it starts whether you want to report it. Nothing is sent unless you choose to.">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE7BA;" />
+                </tk:SettingsCard.HeaderIcon>
+                <ToggleSwitch x:Name="CrashOffers" Toggled="OnCrashOffers" />
             </tk:SettingsCard>
         </StackPanel>
     </ScrollViewer>

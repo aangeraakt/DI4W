@@ -161,6 +161,22 @@ internal static class Win32
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
 
+    /// <summary>Process name of the app in front ("obs64"), or null.</summary>
+    public static string? ForegroundProcessName()
+    {
+        try
+        {
+            GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+            if (pid == 0) return null;
+            using var process = System.Diagnostics.Process.GetProcessById((int)pid);
+            return process.ProcessName;
+        }
+        catch
+        {
+            return null; // it closed meanwhile
+        }
+    }
+
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetClassName(IntPtr hwnd, System.Text.StringBuilder name, int max);
 

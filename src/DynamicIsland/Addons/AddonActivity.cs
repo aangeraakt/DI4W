@@ -13,9 +13,11 @@ public sealed class AddonActivity : Activity
     private readonly Size _expandedSize;
 
     public AddonActivity(string name, int priority, FrameworkElement leading, FrameworkElement trailing,
-                         FrameworkElement bubble, FrameworkElement expanded, double compactWidth = 250, Size? expandedSize = null)
+                         FrameworkElement bubble, FrameworkElement expanded, double compactWidth = 250, Size? expandedSize = null,
+                         string? kind = null)
     {
         _name = name;
+        Kind = kind ?? name;
         _priority = priority;
         _compactWidth = compactWidth;
         _expandedSize = expandedSize ?? new Size(400, 100);
@@ -27,6 +29,7 @@ public sealed class AddonActivity : Activity
 
     public override string Name => _name;
     public override int Priority => _priority;
+    public override string Kind { get; }
     public override double CompactWidth => _compactWidth;
     public override Size ExpandedSize => _expandedSize;
 

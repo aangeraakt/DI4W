@@ -46,12 +46,57 @@ public sealed class IslandApi
         {
             app = "Dynamic Island for Windows",
             version = Updates.UpdateChecker.CurrentVersion.ToString(),
-            endpoints = new[] { "POST /alert", "POST /progress" },
+            endpoints = new[] { "POST /alert", "GET /alert/{id}", "POST /progress" },
         })),
         ("POST", "/alert") => _dispatcher.Invoke(() => Alert(request.Body)),
         ("POST", "/progress") => _dispatcher.Invoke(() => Progress(request.Body)),
+        ("GET", var path) when path.StartsWith("/alert/", StringComparison.Ordinal) => _dispatcher.Invoke(() => AlertState(path["/alert/".Length..])),
         _ => null,
     };
+
+    // ───────────────────────────── alert results (buttons) ─────────────────────────────
+
+    /// <summary>What happened to an alert: "open", "clicked" (with the button's id, or null for the alert itself)
+    /// or "dismissed". Scripts poll GET /alert/{id}; kept for 15 minutes.</summary>
+    private sealed class AlertResult
+    {
+        public string State { get; set; } = "open";
+        public string? Button { get; set; }
+        public DateTime Created { get; } = DateTime.UtcNow;
+    }
+
+    private readonly Dictionary<string, AlertResult> _results = new();
+
+    private LocalResponse AlertState(string id) =>
+        _results.TryGetValue(id, out var r)
+            ? new LocalResponse(200, LocalResponse.ToJson(new { id, state = r.State, button = r.Button }))
+            : LocalResponse.Error(404, "No alert with that id (alerts are kept for 15 minutes).");
+
+    private string NewResult()
+    {
+        foreach (var old in _results.Where(r => DateTime.UtcNow - r.Value.Created > ProgressExpiry).Select(r => r.Key).ToList()) _results.Remove(old);
+        var id = Guid.NewGuid().ToString("N")[..10];
+        _results[id] = new AlertResult();
+        return id;
+    }
+
+    /// <summary>Up to two buttons: {"id":"open","label":"Open log","url":"https://…"} (url optional).</summary>
+    private static LocalResponse? Buttons(JsonElement body, out List<(string Id, string Label, string? Url)> buttons)
+    {
+        buttons = new();
+        if (!body.TryGetProperty("buttons", out var list)) return null;
+        if (list.ValueKind != JsonValueKind.Array || list.GetArrayLength() > 2) return LocalResponse.Error(400, "\"buttons\" must be a list of at most 2 buttons.");
+        foreach (var b in list.EnumerateArray())
+        {
+            if (b.ValueKind != JsonValueKind.Object || Text(b, "label", 20) is not { Length: > 0 } label)
+            {
+                return LocalResponse.Error(400, "Every button needs a \"label\" (up to 20 characters).");
+            }
+            if (Link(b, out var url) is { } error) return error;
+            buttons.Add((Text(b, "id", 40) ?? label, label, url));
+        }
+        return null;
+    }
 
     // ───────────────────────────── alerts ─────────────────────────────
 
@@ -60,21 +105,60 @@ public sealed class IslandApi
         if (Text(body, "title", 120) is not { Length: > 0 } title) return LocalResponse.Error(400, "\"title\" is required.");
         if (!AllowAlert()) return LocalResponse.Error(429, $"More than {MaxAlertsPerMinute} alerts a minute; slow down.");
         if (Link(body, out var url) is { } linkError) return linkError;
+        if (Buttons(body, out var buttons) is { } buttonError) return buttonError;
 
         var color = Color(body) ?? Ui.Blue;
-        var seconds = Number(body, "seconds") is { } s ? Math.Clamp(s, 1, 60) : 5;
+        // With buttons, give people time to choose.
+        var seconds = Number(body, "seconds") is { } s ? Math.Clamp(s, 1, 60) : buttons.Count > 0 ? 12 : 5;
         var sticky = body.TryGetProperty("sticky", out var st) && st.ValueKind == JsonValueKind.True;
 
-        _manager.ShowAlert(new IslandAlert
+        var id = NewResult();
+        var result = _results[id];
+        IslandAlert? alert = null;
+
+        FrameworkElement? accessory = null;
+        if (buttons.Count > 0)
         {
-            Content = Ui.AlertView(Ui.GlyphCircle(Glyph(body, "info"), color, 46, 20), title, Text(body, "message", 300) ?? ""),
-            Size = new Size(400, 76),
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            for (var i = 0; i < buttons.Count; i++)
+            {
+                var (buttonId, label, buttonUrl) = buttons[i];
+                var primary = i == buttons.Count - 1; // the last one is the main action, as in the island's own prompts
+                var button = Ui.Button(Ui.Text(label, 13, FontWeights.SemiBold, primary ? Brushes.Black : Ui.Primary), () =>
+                {
+                    result.State = "clicked";
+                    result.Button = buttonId;
+                    if (buttonUrl is not null) Open(buttonUrl);
+                    _manager.DismissAlert(alert);
+                }, primary ? color : Ui.ButtonBg, double.NaN, 32);
+                button.Padding = new Thickness(14, 0, 14, 0);
+                if (i > 0) button.Margin = new Thickness(8, 0, 0, 0);
+                row.Children.Add(button);
+            }
+            accessory = row;
+        }
+
+        alert = new IslandAlert
+        {
+            Content = Ui.AlertView(Ui.GlyphCircle(Glyph(body, "info"), color, 46, 20), title, Text(body, "message", 300) ?? "", accessory: accessory),
+            Size = new Size(buttons.Count > 0 ? 460 : 400, 76),
             Duration = TimeSpan.FromSeconds(seconds),
             StickyUntilHover = sticky,
-            OnClick = url is null ? null : () => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }),
-        });
-        return LocalResponse.Ok;
+            OnClick = () =>
+            {
+                if (result.State == "open") result.State = "clicked";
+                if (url is not null) Open(url);
+            },
+            OnDismissed = () =>
+            {
+                if (result.State == "open") result.State = "dismissed";
+            },
+        };
+        _manager.ShowAlert(alert);
+        return new LocalResponse(200, LocalResponse.ToJson(new { ok = true, id }));
     }
+
+    private static void Open(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
 
     private bool AllowAlert()
     {
@@ -155,7 +239,7 @@ public sealed class IslandApi
         var track = new Border { Width = 356, Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Track, Child = fill, Margin = new Thickness(0, 10, 0, 0) };
         var expanded = new StackPanel { Margin = new Thickness(22, 16, 22, 14), Children = { title, detail, track } };
 
-        var activity = new AddonActivity($"API: {id}", 14, ring, percent, bubble, expanded, compactWidth: 220, expandedSize: new Size(400, 100));
+        var activity = new AddonActivity($"API: {id}", 14, ring, percent, bubble, expanded, compactWidth: 220, expandedSize: new Size(400, 100), kind: "Api");
         _manager.Register(activity);
         return new ProgressItem { Activity = activity, Ring = ring, BubbleRing = bubble, Percent = percent, Title = title, Detail = detail, Fill = fill };
     }

@@ -57,6 +57,22 @@
                      Title="That shortcut is already in use"
                      Message="Another app (or the island's other shortcut) has claimed it, so the island won't react to it. Try a different one." />
 
+            <TextBlock Text="Order" Style="{StaticResource SectionHeader}" />
+
+            <tk:SettingsCard Header="What gets the island first"
+                             Description="When several things run at once, the top one gets the pill and the next one the small circle. Drag to change the order."
+                             ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                <tk:SettingsCard.HeaderIcon>
+                    <FontIcon Glyph="&#xE8CB;" />
+                </tk:SettingsCard.HeaderIcon>
+                <StackPanel Spacing="8">
+                    <ListView x:Name="OrderList" CanReorderItems="True" AllowDrop="True" CanDragItems="True"
+                              SelectionMode="None" MaxWidth="420" HorizontalAlignment="Left"
+                              DragItemsCompleted="OnOrderChanged" />
+                    <Button Content="Reset to the standard order" Click="OnResetOrder" />
+                </StackPanel>
+            </tk:SettingsCard>
+
             <TextBlock Text="Appearance" Style="{StaticResource SectionHeader}" />
 
             <tk:SettingsCard Header="Preview" Description="How the island looks with the options below."
@@ -106,6 +122,8 @@
                     <ComboBoxItem Content="Automatic (Windows language)" Tag="" />
                     <ComboBoxItem Content="English" Tag="en" />
                     <ComboBoxItem Content="Nederlands" Tag="nl" />
+                    <ComboBoxItem Content="Deutsch" Tag="de" />
+                    <ComboBoxItem Content="Français" Tag="fr" />
                 </ComboBox>
             </tk:SettingsCard>
 

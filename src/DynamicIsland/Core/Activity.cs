@@ -19,8 +19,14 @@ public abstract class Activity
     /// <summary>Extra words for screen readers when the compact view has no text of its own (e.g. the song).</summary>
     public virtual string? AccessibleDetail => null;
 
-    /// <summary>Higher wins the main pill; the runner-up gets the bubble.</summary>
+    /// <summary>Higher wins the main pill; the runner-up gets the bubble (unless the user set an order).</summary>
     public abstract int Priority { get; }
+
+    /// <summary>Stable id for the user's order in the settings ("Timer", "Media"…), not translated.</summary>
+    public virtual string Kind => Name;
+
+    /// <summary>The mouse moved onto or off the compact pill while this activity is in it.</summary>
+    public virtual void OnHover(bool hovering) { }
 
     public bool IsActive
     {

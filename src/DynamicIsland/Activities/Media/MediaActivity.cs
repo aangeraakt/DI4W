@@ -32,6 +32,8 @@ public sealed class MediaActivity : Activity
     private readonly Border _progressTrack = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Track, Cursor = Cursors.Hand };
     private readonly Border _progressFill = new() { Height = 6, CornerRadius = new CornerRadius(3), Background = Ui.Primary, HorizontalAlignment = HorizontalAlignment.Left };
     private readonly ContentControl _playPauseIcon = new();
+    private readonly ContentControl _compactPlayPauseIcon = new();
+    private readonly FrameworkElement _hoverControls;
 
     public MediaActivity(MediaService service, AppSettings settings)
     {
@@ -39,7 +41,9 @@ public sealed class MediaActivity : Activity
         _settings = settings;
 
         Leading = _leadingArt;
-        Trailing = _compactWave;
+        // Hovering the pill swaps the waveform for play/pause and next, so you don't have to open the player.
+        _hoverControls = BuildHoverControls();
+        Trailing = new Grid { VerticalAlignment = VerticalAlignment.Center, Children = { _compactWave, _hoverControls } };
         Bubble = _bubbleArt;
         Expanded = BuildExpanded();
 
@@ -59,6 +63,7 @@ public sealed class MediaActivity : Activity
     public override string Name => L.T("Now Playing");
     public override string? AccessibleDetail => string.Join(" – ", new[] { _title.Text, _artist.Text }.Where(t => !string.IsNullOrWhiteSpace(t)));
     public override int Priority => 10;
+    public override string Kind => "Media";
     public override double CompactWidth => 280;
     public override Size ExpandedSize => new(440, 196);
 
@@ -86,6 +91,7 @@ public sealed class MediaActivity : Activity
         _title.Text = s.Title;
         _artist.Text = s.Artist;
         _playPauseIcon.Content = Ui.Shape(s.IsPlaying ? Icons.Pause : Icons.Play, 26, Ui.Primary);
+        _compactPlayPauseIcon.Content = Ui.Shape(s.IsPlaying ? Icons.Pause : Icons.Play, 12, Ui.Primary);
 
         WaveformView.SetPlaying(s.IsPlaying);
         UpdateProgress();
@@ -118,6 +124,25 @@ public sealed class MediaActivity : Activity
         _remaining.Text = "-" + Ui.FormatTime(dur - pos);
         var frac = dur.TotalSeconds > 0 ? pos.TotalSeconds / dur.TotalSeconds : 0;
         _progressFill.Width = Math.Max(_progressFill.Height, _progressTrack.ActualWidth * Math.Clamp(frac, 0, 1));
+    }
+
+    public override void OnHover(bool hovering)
+    {
+        _hoverControls.Visibility = hovering ? Visibility.Visible : Visibility.Collapsed;
+        _compactWave.Visibility = hovering ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private FrameworkElement BuildHoverControls()
+    {
+        var playPause = Ui.Button(_compactPlayPauseIcon, () => _ = _service.TogglePlayPause(), null, 26, 26, L.T("Play / pause"));
+        var next = Ui.Button(Ui.Shape(Icons.Next, 13, Ui.Primary), () => _ = _service.Next(), null, 26, 26, L.T("Next"));
+        return new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Visibility = Visibility.Collapsed,
+            Children = { playPause, next },
+        };
     }
 
     private FrameworkElement BuildExpanded()

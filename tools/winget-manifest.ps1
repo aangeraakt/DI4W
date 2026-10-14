@@ -1,13 +1,15 @@
-# Writes the winget manifests for a release, in the layout of microsoft/winget-pkgs:
+﻿# Writes the winget manifests for a release, in the layout of microsoft/winget-pkgs:
 #   artifacts/winget/manifests/a/aangeraakt/DynamicIsland/<version>/*.yaml
 #
 #   powershell -ExecutionPolicy Bypass -File tools/winget-manifest.ps1 -Version 1.4.0 -Msi artifacts/release/DI4W-v1.4.0-win-x64.msi
+#   ... -Msi <x64 .msi> -MsiArm64 <arm64 .msi>     (both architectures in one manifest)
 #
-# The checksum and product code come from the .msi itself; the download link is the release's.
+# The checksums and product codes come from the .msi files themselves; the download links are the release's.
 # publish-release.ps1 runs this for every release. To publish to winget, see tools/winget-submit.ps1.
 param(
     [Parameter(Mandatory)][string]$Version,
     [Parameter(Mandatory)][string]$Msi,
+    [string]$MsiArm64,
     [string]$OutDir
 )
 $ErrorActionPreference = 'Stop'
@@ -18,22 +20,42 @@ $repo = 'aangeraakt/DI4W'
 $upgradeCode = '{E513DFD2-80C8-4289-AB9B-6482251656A9}'
 $manifestVersion = '1.10.0'
 
-$Msi = (Resolve-Path $Msi).Path
-$sha = (Get-FileHash $Msi -Algorithm SHA256).Hash
+# The product code from an MSI's Property table (Windows Installer COM, built into Windows).
+function Get-ProductCode($path) {
+    $installer = New-Object -ComObject WindowsInstaller.Installer
+    $db = $installer.GetType().InvokeMember('OpenDatabase', 'InvokeMethod', $null, $installer, @($path, 0))
+    $view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @("SELECT Value FROM Property WHERE Property='ProductCode'"))
+    $view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null) | Out-Null
+    $record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)
+    $code = $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, 1)
+    $view.GetType().InvokeMember('Close', 'InvokeMethod', $null, $view, $null) | Out-Null
+    [System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer) | Out-Null
+    return $code
+}
 
-# Read the product code from the MSI's Property table (Windows Installer COM, built into Windows).
-$installer = New-Object -ComObject WindowsInstaller.Installer
-$db = $installer.GetType().InvokeMember('OpenDatabase', 'InvokeMethod', $null, $installer, @($Msi, 0))
-$view = $db.GetType().InvokeMember('OpenView', 'InvokeMethod', $null, $db, @("SELECT Value FROM Property WHERE Property='ProductCode'"))
-$view.GetType().InvokeMember('Execute', 'InvokeMethod', $null, $view, $null) | Out-Null
-$record = $view.GetType().InvokeMember('Fetch', 'InvokeMethod', $null, $view, $null)
-$productCode = $record.GetType().InvokeMember('StringData', 'GetProperty', $null, $record, 1)
-$view.GetType().InvokeMember('Close', 'InvokeMethod', $null, $view, $null) | Out-Null
-[System.Runtime.InteropServices.Marshal]::ReleaseComObject($installer) | Out-Null
+function Get-InstallerEntry($arch, $path) {
+    $path = (Resolve-Path $path).Path
+    $sha = (Get-FileHash $path -Algorithm SHA256).Hash
+    $productCode = Get-ProductCode $path
+    $url = "https://github.com/$repo/releases/download/v$Version/DI4W-v$Version-win-$arch.msi"
+    return @"
+- Architecture: $arch
+  InstallerUrl: $url
+  InstallerSha256: $sha
+  ProductCode: '$productCode'
+  AppsAndFeaturesEntries:
+  - DisplayName: Dynamic Island for Windows
+    Publisher: aangeraakt
+    ProductCode: '$productCode'
+    UpgradeCode: '$upgradeCode'
+"@
+}
+
+$installers = Get-InstallerEntry 'x64' $Msi
+if ($MsiArm64) { $installers += "`n" + (Get-InstallerEntry 'arm64' $MsiArm64) }
 
 $dir = Join-Path $OutDir "manifests\a\aangeraakt\DynamicIsland\$Version"
 New-Item -ItemType Directory -Force $dir | Out-Null
-$url = "https://github.com/$repo/releases/download/v$Version/DI4W-v$Version-win-x64.msi"
 $date = Get-Date -Format 'yyyy-MM-dd'
 $utf8 = New-Object Text.UTF8Encoding $false
 
@@ -58,15 +80,7 @@ Dependencies:
   - PackageIdentifier: Microsoft.DotNet.DesktopRuntime.8
 ReleaseDate: $date
 Installers:
-- Architecture: x64
-  InstallerUrl: $url
-  InstallerSha256: $sha
-  ProductCode: '$productCode'
-  AppsAndFeaturesEntries:
-  - DisplayName: Dynamic Island for Windows
-    Publisher: aangeraakt
-    ProductCode: '$productCode'
-    UpgradeCode: '$upgradeCode'
+$installers
 ManifestType: installer
 ManifestVersion: $manifestVersion
 "@
@@ -110,6 +124,35 @@ Description: |-
   Een klein zwart eiland bovenaan je scherm dat laat zien wat er gebeurt: muziek met live geluidsbalkjes,
   Claude Code-activiteit, timers, focussessies, downloads, agendaherinneringen, chatberichten en oproepen,
   batterij, Bluetooth-apparaten, het weer en meer. Elke add-on zet je aan of uit in de instellingen-app.
+ManifestType: locale
+ManifestVersion: $manifestVersion
+"@
+
+Write-Manifest 'locale.de-DE' @"
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.locale.$manifestVersion.schema.json
+PackageIdentifier: $id
+PackageVersion: $Version
+PackageLocale: de-DE
+ShortDescription: Die Dynamic Island des iPhone für den Windows-Desktop.
+Description: |-
+  Eine kleine schwarze Insel oben auf dem Bildschirm, die zeigt, was gerade passiert: Musik mit Live-Pegelbalken,
+  Claude-Code-Aktivität, Timer, Fokus-Sitzungen, Downloads, Terminerinnerungen, Chatnachrichten und Anrufe,
+  Akku, Bluetooth-Geräte, das Wetter und mehr. Jedes Add-on lässt sich in der Einstellungen-App ein- und ausschalten.
+ManifestType: locale
+ManifestVersion: $manifestVersion
+"@
+
+Write-Manifest 'locale.fr-FR' @"
+# yaml-language-server: `$schema=https://aka.ms/winget-manifest.locale.$manifestVersion.schema.json
+PackageIdentifier: $id
+PackageVersion: $Version
+PackageLocale: fr-FR
+ShortDescription: La Dynamic Island de l'iPhone, sur le bureau Windows.
+Description: |-
+  Une petite pilule noire en haut de l'écran qui montre ce qui se passe : la musique avec des barres audio en direct,
+  l'activité de Claude Code, les minuteurs, les sessions de concentration, les téléchargements, les rappels d'agenda,
+  les messages et appels, la batterie, les appareils Bluetooth, la météo et plus encore. Chaque module s'active ou se
+  désactive dans l'application Paramètres.
 ManifestType: locale
 ManifestVersion: $manifestVersion
 "@

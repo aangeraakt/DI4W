@@ -37,7 +37,7 @@ A small black pill sits at the top-center of your screen. It changes shape to sh
 
 ### Add-ons
 
-Each one has its own switch under **Settings → Add-ons** (calls and chat apps under **Notifications**). Search the list, show only the ones that are on or off, and press **Preview** to see a sample pop-up in the island.
+Each one has its own switch under **Settings → Add-ons** (calls and chat apps under **Notifications**). Search the list, show only the ones that are on or off, and press **Preview** to see a sample pop-up in the island. Open an add-on to set **quiet times**: hours when its pop-ups stay away (for example clipboard pop-ups from 22:00 to 08:00), or apps that silence it while they're in front (a game, OBS, PowerPoint).
 
 | | What it shows |
 |---|---|
@@ -67,19 +67,24 @@ It also includes:
 - **Stays out of the way.** It never takes keyboard focus, you can click through everything around the pill, and it hides while a fullscreen game or video is playing.
 - **Lightweight.** Native C# and WPF, with a separate WinUI 3 settings app. Spotify works without a Spotify account or API key. With Windows' battery saver on, it redraws less often and skips blur and shadow effects.
 - **Any display.** Pick the display it sits on, or let it follow your mouse. It stays below a taskbar that's at the top of the screen.
-- **English and Dutch.** It follows your Windows language, or you can pick one under **Settings → General**.
+- **English, Dutch, German and French.** It follows your Windows language, or you can pick one under **Settings → General**.
 - **Accessible.** Screen readers announce new pop-ups and can read what the island shows. **Ctrl+Alt+O** opens it without a mouse.
 - **Dark or light.** A black pill like the iPhone, a light one, or one that follows Windows' light or dark mode. Size, distance from the top and theme have a live preview under **Settings → General**.
 - **Welcome tour.** After a fresh install the settings app explains the island and its shortcuts and lets you pick add-ons. See it again under **Settings → About**.
+- **Recent alerts.** Missed something? Click the empty island and choose **Recent**, or pick **Recent alerts…** from the tray menu. It also lists pop-ups that Do Not Disturb or quiet times held back.
+- **Your order.** When several things run at once, you decide which one gets the pill: drag them into order under **Settings → General → Order**.
+- **Music controls on hover.** Point at the music in the pill for play/pause and next, without opening the player.
+- **Backup.** Export all settings to a file and import them on another PC (**Settings → About**).
+- **Crash reports you control.** If the island ever crashes, it offers to open a GitHub issue with the details filled in. You see everything first; nothing is sent by itself.
 
 ## Install
 
-1. Install the [.NET 8 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0) if you don't have it. The installer tells you if it's missing.
-2. Download **DI4W-v…-win-x64.msi** from the [latest release](https://github.com/aangeraakt/DI4W/releases/latest) and run it.
+1. Install the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (x64, or Arm64 for Snapdragon PCs) if you don't have it. The installer tells you if it's missing.
+2. Download **DI4W-v…-win-x64.msi** (or **-win-arm64.msi** for Snapdragon and other Arm PCs) from the [latest release](https://github.com/aangeraakt/DI4W/releases/latest) and run it. Or install it with `winget install aangeraakt.DynamicIsland`.
 
 The installer needs no administrator rights. It installs to `%LocalAppData%\Programs\Dynamic Island`, adds Start Menu shortcuts and an entry in **Settings → Apps → Installed apps**, and starts the island with Windows. You can turn that off in the settings app. Prefer no installer? The release also has a `.zip` you can unzip anywhere.
 
-Requires Windows 10 (version 2004 or later) or Windows 11, x64.
+Requires Windows 10 (version 2004 or later) or Windows 11, x64 or Arm64.
 
 <p align="center"><img src="docs/settings.png" alt="The settings app" width="640"></p>
 
@@ -107,7 +112,8 @@ This publishes the island and the settings app (`publish\Settings\`) in one go. 
 
 | Action | What happens |
 |---|---|
-| **Click the empty island** | Opens the timer picker. Choose a preset, or scroll over the minutes/seconds, then press **Start**. |
+| **Click the empty island** | Opens the timer picker. Choose a preset, or scroll over the minutes/seconds, then press **Start**. The **Recent** tab lists the latest alerts. |
+| **Point at the music** | Play/pause and next appear in the pill. |
 | **Click an activity** | Expands it (music player, timer controls, Claude sessions). |
 | **Move the mouse away** | Collapses it again. |
 | **Click the small circle** | Swaps the second activity into the main pill. |
@@ -178,6 +184,8 @@ Everything is stored in `%AppData%\DynamicIsland\settings.json`. You can also ed
 | `TopOffset` | `8` | Distance from the top of the screen |
 | `Scale` | `1.0` | Overall size (also under **Size** in the menu) |
 | `Theme` | `""` | `""` dark, `"Light"`, or `"System"` to follow Windows |
+| `ActivityOrder` | `[]` | Which activity gets the pill first, e.g. `["Media","Timer"]`; empty is the built-in order |
+| `Addons.Quiet` | `{}` | Quiet times per add-on, e.g. `{"Clipboard":{"HoursOn":true,"From":"22:00","To":"08:00","Apps":["obs64"]}}` |
 | `HideInFullscreen` | `true` | Hide while fullscreen games or videos run |
 | `MediaEnabled` | `true` | Show the music activity |
 | `MediaAnyPlayer` | `false` | Show players other than Spotify |
@@ -207,9 +215,9 @@ The app updates itself from this repository's [GitHub releases](https://github.c
 powershell -ExecutionPolicy Bypass -File tools/publish-release.ps1 -Version 1.1.0
 ```
 
-This sets the version in both projects, builds the app, zips it as `DI4W-v1.1.0-win-x64.zip`, builds the installer `DI4W-v1.1.0-win-x64.msi` from the same files, commits and pushes the version change, and creates the `v1.1.0` release with both attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), or `-Draft` to review the release before publishing it. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
+This sets the version in both projects and, for x64 and Arm64, builds the app, zips it as `DI4W-v1.1.0-win-<arch>.zip` and builds the installer `DI4W-v1.1.0-win-<arch>.msi` from the same files. It then commits and pushes the version change and creates the `v1.1.0` release with all four attached. Add `-NotesFile notes.md` to use your own release notes (otherwise GitHub generates them), `-Draft` to review the release before publishing it, or `-NoArm64` to build x64 only. You need the [GitHub CLI](https://cli.github.com/), logged in with `gh auth login`.
 
-It also writes the winget manifests (`artifacts/release/winget`). Once the release is public, submit them to the Windows Package Manager with:
+It also writes the winget manifests (`artifacts/release/winget`) and, once the package is listed in winget, submits the new version there by itself (`-NoWinget` skips that). The very first submission, or a retry, is done by hand:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File tools/winget-submit.ps1 -Version 1.1.0
@@ -217,7 +225,21 @@ powershell -ExecutionPolicy Bypass -File tools/winget-submit.ps1 -Version 1.1.0
 
 This opens a pull request to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) from your account; after Microsoft's checks and a review, `winget install aangeraakt.DynamicIsland` works.
 
-The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip` or `*-win-x64.msi` asset. Drafts and pre-releases are ignored.
+The updater only picks up releases whose tag is a version (`v1.2.3`) and that have a `*-win-x64.zip`/`.msi` asset (`*-win-arm64` for the Arm64 build; each build stays on its own architecture). Drafts and pre-releases are ignored.
+
+### Code signing
+
+Unsigned downloads make Windows SmartScreen show "Windows protected your PC" to new users. `publish-release.ps1` signs the apps and installers when it's given a certificate; without one it builds unsigned and says so. Two ways to get one:
+
+- **[SignPath Foundation](https://signpath.org/)**: free code signing for open-source projects. Apply with the repository; once accepted, sign through their service.
+- **[Azure Trusted Signing](https://learn.microsoft.com/azure/trusted-signing/)**: a few euros a month, for individuals and companies Microsoft can verify. Install the [Trusted Signing client tools](https://learn.microsoft.com/azure/trusted-signing/how-to-signing-integrations), then:
+
+```powershell
+$env:DI4W_TRUSTED_SIGNING_METADATA = "C:\signing\metadata.json"   # endpoint, account and certificate profile
+$env:DI4W_TRUSTED_SIGNING_DLIB = "C:\signing\Azure.CodeSigning.Dlib.dll"
+```
+
+With a regular code-signing certificate in your certificate store, set `DI4W_SIGN_THUMBPRINT` (or pass `-CertThumbprint`) instead. Signing uses `signtool.exe` from the Windows SDK.
 
 ### Tests
 
@@ -246,6 +268,9 @@ curl -X POST http://127.0.0.1:47823/alert -H "Content-Type: application/json" -d
 | `seconds` | optional | How long it stays, 1–60 (default 5) |
 | `sticky` | optional | `true` keeps it open until the mouse has been over it |
 | `url` | optional | An `http`/`https` link opened when the pop-up is clicked |
+| `buttons` | optional | Up to two buttons: `[{"id":"log","label":"Open log","url":"https://…"},{"id":"retry","label":"Retry"}]`. The last one is the main one; `url` is optional |
+
+The answer is `{"ok":true,"id":"…"}`. To find out what happened to the pop-up, ask `GET /alert/<id>`: `state` is `open`, `clicked` (with `button`, the clicked button's `id`, or `null` for the pop-up itself) or `dismissed`. Results are kept for 15 minutes.
 
 **Progress in the pill**
 
@@ -260,6 +285,7 @@ curl -X POST http://127.0.0.1:47823/progress -H "Content-Type: application/json"
 
 ```powershell
 island.ps1 -Title "Backup done" -Icon success -Color green
+island.ps1 -Title "Build failed" -Icon error -Color red -Button "log=Open log" -Button "retry=Retry" -Wait   # prints log, retry, alert or dismissed
 island.ps1 -Progress backup -Title "Backing up" -Value 0.4 -Detail "120 of 312 files"
 island.ps1 -Progress backup -Done -Title "Backup done"
 ```

@@ -10,9 +10,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Platforms>x64</Platforms>
-    <PlatformTarget>x64</PlatformTarget>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <Platforms>x64;ARM64</Platforms>
+    <!-- x64 by default; publish with -r win-arm64 for Snapdragon PCs (tools/publish-release.ps1 builds both). -->
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <PlatformTarget Condition="'$(RuntimeIdentifier)' == 'win-arm64'">ARM64</PlatformTarget>
+    <PlatformTarget Condition="'$(PlatformTarget)' == '' Or '$(PlatformTarget)' == 'AnyCPU'">x64</PlatformTarget>
     <SelfContained>false</SelfContained>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>..\DynamicIsland\Assets\island.ico</ApplicationIcon>
@@ -32,6 +34,16 @@
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
   </ItemGroup>
 
+  <!-- The Windows App SDK runtime copied next to the app includes on-device AI (ONNX Runtime, DirectML): about
+       45 MB this app never uses. They're only loaded when an AI API is called, so the published app leaves them out. -->
+  <Target Name="RemoveUnusedRuntimeParts" AfterTargets="Publish">
+    <ItemGroup>
+      <UnusedRuntimePart Include="$(PublishDir)onnxruntime*.dll;$(PublishDir)DirectML.dll;$(PublishDir)Microsoft.ML.OnnxRuntime.dll;$(PublishDir)Microsoft.Windows.AI.MachineLearning.dll;$(PublishDir)NpuDetect\**" />
+    </ItemGroup>
+    <Delete Files="@(UnusedRuntimePart)" />
+    <RemoveDir Directories="$(PublishDir)NpuDetect" />
+  </Target>
+
   <!-- The settings model is shared with the island so both read and write the same settings.json. -->
   <ItemGroup>
     <Compile Include="..\DynamicIsland\Settings\AppSettings.cs" Link="Shared\AppSettings.cs" />
@@ -39,8 +51,11 @@
     <Compile Include="..\DynamicIsland\Settings\Displays.cs" Link="Shared\Displays.cs" />
     <Compile Include="..\DynamicIsland\Settings\IslandTheme.cs" Link="Shared\IslandTheme.cs" />
     <Compile Include="..\DynamicIsland\Settings\IslandMessages.cs" Link="Shared\IslandMessages.cs" />
+    <Compile Include="..\DynamicIsland\Settings\CrashReport.cs" Link="Shared\CrashReport.cs" />
     <Compile Include="..\DynamicIsland\Settings\L.cs" Link="Shared\L.cs" />
     <Compile Include="..\DynamicIsland\Settings\Strings.nl.cs" Link="Shared\Strings.nl.cs" />
+    <Compile Include="..\DynamicIsland\Settings\Strings.de.cs" Link="Shared\Strings.de.cs" />
+    <Compile Include="..\DynamicIsland\Settings\Strings.fr.cs" Link="Shared\Strings.fr.cs" />
     <Compile Include="..\DynamicIsland\Core\Log.cs" Link="Shared\Log.cs" />
     <Compile Include="..\DynamicIsland\Updates\UpdateChecker.cs" Link="Shared\UpdateChecker.cs" />
     <Content Include="..\DynamicIsland\Assets\island.ico" Link="Assets\island.ico" CopyToOutputDirectory="PreserveNewest" />

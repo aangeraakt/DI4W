@@ -23,7 +23,8 @@ public sealed partial class MainWindow : Window
 
     /// <param name="startPage">Tag of the page to open first ("General", "About", …); null for General.</param>
     /// <param name="welcome">Show the welcome tour (the island asks for it after a fresh install).</param>
-    public MainWindow(string? startPage = null, bool welcome = false)
+    /// <param name="crash">The island's last crash: open the report form with it (on the About page).</param>
+    public MainWindow(string? startPage = null, bool welcome = false, string? crash = null)
     {
         InitializeComponent();
         Translator.Apply(Content); // title bar and navigation
@@ -66,6 +67,14 @@ public sealed partial class MainWindow : Window
             var root = (FrameworkElement)Content;
             root.Loaded += async (_, _) => await ShowWelcomeAsync();
         }
+        else if (crash is not null)
+        {
+            var root = (FrameworkElement)Content;
+            root.Loaded += async (_, _) =>
+            {
+                if (ContentFrame.Content is AboutPage about) await about.ReportAsync(crash);
+            };
+        }
         Nav.SelectedItem = Nav.MenuItems.Concat(Nav.FooterMenuItems).OfType<NavigationViewItem>()
                                .FirstOrDefault(i => string.Equals(i.Tag as string, startPage, StringComparison.OrdinalIgnoreCase))
                            ?? Nav.MenuItems[0];
@@ -74,6 +83,7 @@ public sealed partial class MainWindow : Window
     /// <summary>The welcome tour; afterwards the current page is rebuilt, as the tour may have changed its settings.</summary>
     public async Task ShowWelcomeAsync()
     {
+        if (!SettingsStore.Current.WelcomeShown) SettingsStore.Change(s => s.WelcomeShown = true);
         var dialog = new WelcomeDialog { XamlRoot = Content.XamlRoot };
         await dialog.ShowAsync();
         if (Nav.SelectedItem is NavigationViewItem { Tag: string tag } && Pages.TryGetValue(tag, out var page))

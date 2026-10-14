@@ -1,16 +1,17 @@
 <Project Sdk="WixToolset.Sdk/5.0.2">
 
   <!--
-    Builds DI4W-v<version>-win-x64.msi from a published app folder:
-      dotnet build installer -c Release -p:AppVersion=1.2.0 -p:AppDir=<folder with DynamicIsland.exe>
+    Builds DI4W-v<version>-win-<arch>.msi from a published app folder:
+      dotnet build installer -c Release -p:AppVersion=1.2.0 -p:AppDir=<folder with DynamicIsland.exe> [-p:Arch=arm64]
     tools/publish-release.ps1 does this as part of a release.
   -->
   <PropertyGroup>
     <AppVersion Condition="'$(AppVersion)' == ''">0.0.0</AppVersion>
     <AppDir Condition="'$(AppDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\release\DI4W</AppDir>
-    <OutputName>DI4W-v$(AppVersion)-win-x64</OutputName>
-    <InstallerPlatform>x64</InstallerPlatform>
-    <DefineConstants>AppVersion=$(AppVersion);AppDir=$(AppDir)</DefineConstants>
+    <Arch Condition="'$(Arch)' == ''">x64</Arch>
+    <OutputName>DI4W-v$(AppVersion)-win-$(Arch)</OutputName>
+    <InstallerPlatform>$(Arch)</InstallerPlatform>
+    <DefineConstants>AppVersion=$(AppVersion);AppDir=$(AppDir);Arch=$(Arch)</DefineConstants>
     <!-- ICE38/64/91: written for per-machine installs, this one is per-user (%LocalAppData%).
          ICE03: some Windows App SDK DLLs carry language tags Windows Installer considers invalid; harmless here. -->
     <SuppressIces>ICE03;ICE38;ICE64;ICE91</SuppressIces>

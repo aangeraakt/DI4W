@@ -38,7 +38,7 @@ public sealed class DownloadsAddon : Addon
     {
         _activity = new AddonActivity("Downloads", 15,
             Ui.Glyph("", 15, Ui.Blue), _compact, Ui.Glyph("", 13, Ui.Blue), _list,
-            compactWidth: 240, expandedSize: new Size(400, 120));
+            compactWidth: 240, expandedSize: new Size(400, 120), kind: "Downloads");
         context.Manager.Register(_activity);
     }
 
@@ -169,23 +169,19 @@ public sealed class DownloadsAddon : Addon
             // fine without a size
         }
 
-        Show(new IslandAlert
-        {
-            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Download complete"),
-                                   $"{Path.GetFileName(path)}{(size > 0 ? $" · {UsbDriveAddon.FormatSize(size)}" : "")}"),
-            Size = new Size(380, 76),
-            Duration = TimeSpan.FromSeconds(4),
-            // Show it in Explorer rather than running it: downloads can be programs.
-            OnClick = () => Process.Start("explorer.exe", $"/select,\"{path}\""),
-        });
+        // Show it in Explorer rather than running it: downloads can be programs.
+        ShowComplete(Path.GetFileName(path), size, () => Process.Start("explorer.exe", $"/select,\"{path}\""));
     }
 
-    public override void Preview() => Show(new IslandAlert
+    public override void Preview() => ShowComplete(L.T("report") + ".pdf", 2_400_000, null);
+
+    private void ShowComplete(string name, long size, Action? onClick) => Show(new IslandAlert
     {
         Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Blue, 46, 20), L.T("Download complete"),
-                               $"{L.T("report")}.pdf · {UsbDriveAddon.FormatSize(2_400_000)}"),
+                               $"{name}{(size > 0 ? $" · {UsbDriveAddon.FormatSize(size)}" : "")}"),
         Size = new Size(380, 76),
         Duration = TimeSpan.FromSeconds(4),
+        OnClick = onClick,
     });
 
     // "photo.jpg.crdownload" -> "photo.jpg"; Chrome's placeholder "Unconfirmed 1234" -> "New download"

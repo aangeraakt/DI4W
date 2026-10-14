@@ -23,9 +23,9 @@
     <Property Id="ARPHELPLINK" Value="https://github.com/aangeraakt/DI4W/issues" />
 
     <!-- The app needs the .NET 8 Desktop Runtime; say so up front instead of failing on first start. -->
-    <netfx:DotNetCompatibilityCheck Property="DOTNET8DESKTOP" RuntimeType="desktop" Platform="x64" Version="8.0.0" RollForward="minor" />
+    <netfx:DotNetCompatibilityCheck Property="DOTNET8DESKTOP" RuntimeType="desktop" Platform="$(var.Arch)" Version="8.0.0" RollForward="minor" />
     <Launch Condition="Installed OR DOTNET8DESKTOP = &quot;0&quot;"
-            Message="Dynamic Island needs the .NET 8 Desktop Runtime (x64). Download it from https://dotnet.microsoft.com/download/dotnet/8.0, then run this installer again." />
+            Message="Dynamic Island needs the .NET 8 Desktop Runtime ($(var.Arch)). Download it from https://dotnet.microsoft.com/download/dotnet/8.0, then run this installer again." />
 
     <!-- Close a running island and settings app before replacing their files: ask nicely (close and
          end-session messages, which both apps handle by quitting cleanly), and end them after 10 s if still open. -->

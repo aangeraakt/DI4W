@@ -49,6 +49,7 @@ public sealed class ClaudeActivity : Activity
 
     public override string Name => "Claude";
     public override int Priority => 20;
+    public override string Kind => "Claude";
     public override double CompactWidth => 250;
     public override Size ExpandedSize => new(400, 92 + Math.Min(_sessions.Count, 4) * 24);
 

@@ -44,14 +44,22 @@ public partial class App : Application
         try
         {
             // Also for the controls' own text (dialog buttons, number boxes).
-            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = L.IsDutch ? "nl-NL" : "en-US";
+            Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride = L.Language switch { "nl" => "nl-NL", "de" => "de-DE", "fr" => "fr-FR", _ => "en-US" };
         }
         catch
         {
             // Not available in every setup; our own text is translated regardless.
         }
 
-        _window = new MainWindow(page, welcome: cmd.Contains("--welcome"));
+        // The island asks for the tour after a fresh install; also show it if this app is opened first.
+        // "--report-crash": the island crashed last time and the user clicked its offer to report it.
+        var crash = cmd.Contains("--report-crash") ? CrashReport.Read() : null;
+        if (crash is not null)
+        {
+            CrashReport.Clear();
+            page = "About";
+        }
+        _window = new MainWindow(page, welcome: crash is null && (cmd.Contains("--welcome") || !SettingsStore.Current.WelcomeShown), crash: crash);
         _window.Activate();
     }
 

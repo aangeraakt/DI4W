@@ -34,7 +34,7 @@ public sealed partial class FileCopyAddon : Addon
         var expanded = new StackPanel { Margin = new Thickness(22, 18, 22, 16), Children = { _title, _track } };
         _activity = new AddonActivity("File copy", 12,
             Ui.Glyph("", 15, Ui.Teal), _percent, Ui.Glyph("", 13, Ui.Teal), expanded,
-            compactWidth: 220, expandedSize: new Size(380, 84));
+            compactWidth: 220, expandedSize: new Size(380, 84), kind: "FileCopy");
         context.Manager.Register(_activity);
     }
 

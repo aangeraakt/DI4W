@@ -203,6 +203,7 @@ public sealed partial class AddonsPage : Page
             $"curl -X POST http://127.0.0.1:{port}/alert -H \"Content-Type: application/json\" -d \"{{\\\"title\\\":\\\"Backup done\\\",\\\"icon\\\":\\\"success\\\"}}\"\n\n" +
             L.T("PowerShell (the helper script is in the app's tools folder):") + "\n" +
             "island.ps1 -Title \"Backup done\" -Icon success\n" +
+            "island.ps1 -Title \"Build failed\" -Icon error -Button \"log=Open log\" -Wait\n" +
             "island.ps1 -Progress backup -Title \"Backing up\" -Value 0.4";
         var text = new TextBlock
         {
@@ -244,13 +245,167 @@ public sealed partial class AddonsPage : Page
         group.Entries.Add(new Entry(card, property, $"{group.Header.Text} {header} {description}", group));
     }
 
-    private void Toggle(string property, string header, string description, string glyph) => Add(new SettingsCard
+    /// <summary>An add-on with just a switch; it opens to show its quiet times, when it has pop-ups.</summary>
+    private void Toggle(string property, string header, string description, string glyph)
     {
-        Header = header,
-        Description = Describe(property, description),
-        HeaderIcon = new FontIcon { Glyph = glyph },
-        Content = Controls(property),
-    }, property, header, description);
+        if (!NoQuiet.Contains(property))
+        {
+            Expander(property, header, description, glyph);
+            return;
+        }
+        Add(new SettingsCard
+        {
+            Header = header,
+            Description = Describe(property, description),
+            HeaderIcon = new FontIcon { Glyph = glyph },
+            Content = Controls(property),
+        }, property, header, description);
+    }
+
+    // ───────────────────────────── quiet times ─────────────────────────────
+
+    /// <summary>Add-ons without pop-ups of their own (a moon, a live view, the API) have no quiet times.</summary>
+    private static readonly HashSet<string> NoQuiet = new()
+    {
+        nameof(AddonSettings.DoNotDisturb), nameof(AddonSettings.GameMode), nameof(AddonSettings.IslandApi),
+    };
+
+    private static AddonQuiet QuietOf(string key) =>
+        Options.Quiet.TryGetValue(key, out var q) ? q : new AddonQuiet();
+
+    /// <summary>Saves a changed copy (the change may run twice, see SettingsStore.Change, so it sets a whole copy).</summary>
+    private static void SaveQuiet(string key, AddonQuiet quiet)
+    {
+        var copy = quiet.Copy();
+        SettingsStore.Change(s =>
+        {
+            if (copy.IsEmpty) s.Addons.Quiet.Remove(key);
+            else s.Addons.Quiet[key] = copy.Copy();
+        });
+    }
+
+    private static SettingsCard QuietCard(string key)
+    {
+        var quiet = QuietOf(key).Copy();
+
+        // Hours: [x] Quiet between [22:00] and [08:00]
+        var hours = new CheckBox { Content = L.T("Quiet between"), IsChecked = quiet.HoursOn, MinWidth = 0 };
+        var from = new TimePicker { ClockIdentifier = "24HourClock", MinuteIncrement = 5, Time = Parse(quiet.From, 22), IsEnabled = quiet.HoursOn };
+        var to = new TimePicker { ClockIdentifier = "24HourClock", MinuteIncrement = 5, Time = Parse(quiet.To, 8), IsEnabled = quiet.HoursOn };
+        hours.Click += (_, _) =>
+        {
+            quiet.HoursOn = hours.IsChecked == true;
+            from.IsEnabled = to.IsEnabled = quiet.HoursOn;
+            SaveQuiet(key, quiet);
+        };
+        from.TimeChanged += (_, e) =>
+        {
+            quiet.From = e.NewTime.ToString(@"hh\:mm");
+            SaveQuiet(key, quiet);
+        };
+        to.TimeChanged += (_, e) =>
+        {
+            quiet.To = e.NewTime.ToString(@"hh\:mm");
+            SaveQuiet(key, quiet);
+        };
+        var hoursRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal, Spacing = 8,
+            Children = { hours, from, new TextBlock { Text = L.T("and"), VerticalAlignment = VerticalAlignment.Center }, to },
+        };
+
+        // Apps: chips with a remove button, and a drop-down of the apps that are open now.
+        var chips = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        var add = new DropDownButton { Content = L.T("Add an open app") };
+        var menu = new MenuFlyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Bottom };
+        add.Flyout = menu;
+
+        void RenderApps()
+        {
+            chips.Children.Clear();
+            foreach (var app in quiet.Apps.ToList())
+            {
+                var chip = new Button
+                {
+                    Content = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal, Spacing = 6,
+                        Children = { new TextBlock { Text = app }, new FontIcon { Glyph = "", FontSize = 10 } },
+                    },
+                    Padding = new Thickness(10, 4, 8, 5),
+                };
+                ToolTipService.SetToolTip(chip, L.T("Remove"));
+                chip.Click += (_, _) =>
+                {
+                    quiet.Apps.Remove(app);
+                    SaveQuiet(key, quiet);
+                    RenderApps();
+                };
+                chips.Children.Add(chip);
+            }
+        }
+
+        menu.Opening += (_, _) =>
+        {
+            menu.Items.Clear();
+            foreach (var name in OpenApps().Where(n => !quiet.Apps.Contains(n, StringComparer.OrdinalIgnoreCase)))
+            {
+                var item = new MenuFlyoutItem { Text = name };
+                item.Click += (_, _) =>
+                {
+                    quiet.Apps.Add(name);
+                    SaveQuiet(key, quiet);
+                    RenderApps();
+                };
+                menu.Items.Add(item);
+            }
+            if (menu.Items.Count == 0) menu.Items.Add(new MenuFlyoutItem { Text = L.T("No other apps are open"), IsEnabled = false });
+        };
+        RenderApps();
+
+        var appsRow = new StackPanel
+        {
+            Spacing = 6,
+            Children =
+            {
+                new TextBlock { Text = L.T("Also quiet while one of these apps is in front:"), TextWrapping = TextWrapping.Wrap },
+                new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { chips, add } },
+            },
+        };
+
+        return new SettingsCard
+        {
+            Header = L.T("Quiet times"),
+            Description = L.T("Its pop-ups stay away then. You'll still find them under Recent in the island."),
+            ContentAlignment = ContentAlignment.Vertical,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel { Spacing = 12, Children = { hoursRow, appsRow } },
+        };
+
+        static TimeSpan Parse(string text, int fallbackHour) => TimeSpan.TryParse(text, out var t) ? t : TimeSpan.FromHours(fallbackHour);
+    }
+
+    /// <summary>Apps with a window open now (process names), for the quiet-times list.</summary>
+    private static List<string> OpenApps()
+    {
+        var self = Environment.ProcessId;
+        return System.Diagnostics.Process.GetProcesses()
+            .Where(p =>
+            {
+                try
+                {
+                    return p.Id != self && p.MainWindowHandle != IntPtr.Zero && p.ProcessName is not ("DynamicIsland" or "explorer" or "TextInputHost" or "ApplicationFrameHost");
+                }
+                catch
+                {
+                    return false;
+                }
+            })
+            .Select(p => p.ProcessName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(n => n, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
 
     // ───────────────────────────── live status from the island ─────────────────────────────
 
@@ -306,6 +461,7 @@ public sealed partial class AddonsPage : Page
         };
         if (property is not null) expander.Content = Controls(property);
         foreach (var item in items) expander.Items.Add(item);
+        if (property is not null && !NoQuiet.Contains(property)) expander.Items.Add(QuietCard(property));
         Add(expander, property, header, description);
     }
 

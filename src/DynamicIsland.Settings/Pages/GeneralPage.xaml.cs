@@ -38,6 +38,7 @@ public sealed partial class GeneralPage : Page
         TopOffset.Value = s.TopOffset;
         TopOffsetLabel.Text = $"{s.TopOffset:0} px";
         FillDisplays(s.Monitor);
+        FillOrder(s.ActivityOrder);
         LanguageBox.SelectedItem = LanguageBox.Items.Cast<ComboBoxItem>().FirstOrDefault(i => (string)i.Tag == s.Language)
                                    ?? LanguageBox.Items[0];
 
@@ -95,6 +96,39 @@ public sealed partial class GeneralPage : Page
         if (value == SettingsStore.Current.Language) return;
         SettingsStore.Change(s => s.Language = value); // the island restarts itself in the new language
         App.Restart("General");                        // and so does this window, so every text is redrawn
+    }
+
+    // ───────────────────────────── activity order ─────────────────────────────
+
+    /// <summary>One row of the order list; the list shows <see cref="ToString"/>.</summary>
+    private sealed record OrderItem(string Kind, string Label)
+    {
+        public override string ToString() => Label;
+    }
+
+    private readonly System.Collections.ObjectModel.ObservableCollection<OrderItem> _order = new();
+
+    private void FillOrder(IEnumerable<string> kinds)
+    {
+        _order.Clear();
+        foreach (var kind in ActivityKinds.Ordered(kinds))
+        {
+            var label = ActivityKinds.All.First(k => k.Kind == kind).Label;
+            _order.Add(new OrderItem(kind, L.T(label)));
+        }
+        OrderList.ItemsSource = _order;
+    }
+
+    private void OnOrderChanged(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        var kinds = _order.Select(o => o.Kind).ToList();
+        SettingsStore.Change(s => s.ActivityOrder = kinds.ToList());
+    }
+
+    private void OnResetOrder(object sender, RoutedEventArgs e)
+    {
+        SettingsStore.Change(s => s.ActivityOrder = new List<string>());
+        FillOrder(Array.Empty<string>());
     }
 
     private void OnTheme(object sender, SelectionChangedEventArgs e)

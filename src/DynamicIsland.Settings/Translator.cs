@@ -15,7 +15,7 @@ public static class Translator
 {
     public static void Apply(object? root)
     {
-        if (!L.IsDutch || root is null) return;
+        if (!L.IsTranslated || root is null) return;
         Walk(root, 0);
     }
 

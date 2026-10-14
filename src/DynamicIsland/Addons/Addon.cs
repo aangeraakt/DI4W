@@ -135,5 +135,17 @@ public abstract class Addon
         }
     }
 
-    protected void Show(IslandAlert alert) => Context.Manager.ShowAlert(alert);
+    /// <summary>Shows a pop-up, unless this add-on's quiet times apply right now (then it only goes to Recent).
+    /// Previews from the settings app always show.</summary>
+    protected void Show(IslandAlert alert)
+    {
+        var manager = Context.Manager;
+        if (manager.Recording && Options.Quiet.TryGetValue(Key, out var quiet) && !quiet.IsEmpty
+            && quiet.IsQuiet(DateTime.Now.TimeOfDay, quiet.Apps.Count > 0 ? Interop.Win32.ForegroundProcessName() : null))
+        {
+            manager.Miss(alert);
+            return;
+        }
+        manager.ShowAlert(alert);
+    }
 }

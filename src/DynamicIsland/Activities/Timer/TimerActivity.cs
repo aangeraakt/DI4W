@@ -50,6 +50,7 @@ public sealed class TimerActivity : Activity
 
     public override string Name => L.T("Timer");
     public override int Priority => 30;
+    public override string Kind => "Timer";
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
 

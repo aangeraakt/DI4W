@@ -33,7 +33,7 @@ public sealed class GameModeAddon : Addon
 
         _activity = new AddonActivity("Game", 10,
             Ui.Glyph("", 16, Ui.Green), _compact, Ui.Glyph("", 13, Ui.Green), grid,
-            compactWidth: 250, expandedSize: new Size(400, 92));
+            compactWidth: 250, expandedSize: new Size(400, 92), kind: "Game");
         context.Manager.Register(_activity);
     }
 

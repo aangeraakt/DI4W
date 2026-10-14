@@ -48,8 +48,67 @@ public sealed class ActivityManager
     /// <summary>Active activities, most important first. A user-pinned activity jumps to the front.</summary>
     public IReadOnlyList<Activity> Active =>
         _activities.Where(a => a.IsActive)
-                   .OrderByDescending(a => a == _pinned ? int.MaxValue : a.Priority)
+                   .OrderByDescending(Rank)
                    .ToList();
+
+    private IReadOnlyList<string> _order = Array.Empty<string>();
+
+    /// <summary>The user's order of activity kinds, most important first (Settings → General); empty = built-in.</summary>
+    public IReadOnlyList<string> Order
+    {
+        get => _order;
+        set
+        {
+            if (_order.SequenceEqual(value)) return;
+            _order = value.ToList();
+            Changed?.Invoke();
+        }
+    }
+
+    private int Rank(Activity a)
+    {
+        if (a == _pinned) return int.MaxValue;
+        var index = IndexOf(_order, a.Kind);
+        // Ordered kinds outrank everything else; kinds the list doesn't know yet keep their own priority.
+        return index >= 0 ? 100_000 - index : a.Priority;
+    }
+
+    private static int IndexOf(IReadOnlyList<string> list, string kind)
+    {
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (string.Equals(list[i], kind, StringComparison.OrdinalIgnoreCase)) return i;
+        }
+        return -1;
+    }
+
+    // ───────────────────────────── history ─────────────────────────────
+
+    /// <summary>An alert that was shown (or held back by Do Not Disturb), as text for the Recent list.</summary>
+    public sealed record PastAlert(DateTime Time, string Title, string Detail, Action? OnClick, bool Missed, IslandAlert Source);
+
+    private const int HistorySize = 10;
+    private readonly LinkedList<PastAlert> _history = new();
+    private readonly HashSet<IslandAlert> _samples = new();
+
+    /// <summary>The latest alerts, newest first.</summary>
+    public IReadOnlyList<PastAlert> History => _history.ToList();
+
+    /// <summary>Off while the settings app's previews run, so samples don't end up in the history.</summary>
+    public bool Recording { get; set; } = true;
+
+    /// <summary>An alert that was held back (an add-on's quiet times): only listed in Recent.</summary>
+    public void Miss(IslandAlert alert) => Remember(alert, missed: true);
+
+    private void Remember(IslandAlert alert, bool missed)
+    {
+        // Volume and brightness bars are momentary feedback, not news.
+        if (alert.Urgent || _samples.Contains(alert) || _history.Any(p => p.Source == alert)) return; // (or shown again after an interruption)
+        var texts = UI.ViewText.Texts(alert.Content);
+        if (texts.Count == 0) return;
+        _history.AddFirst(new PastAlert(DateTime.Now, texts[0], string.Join(" · ", texts.Skip(1)), alert.OnClick, missed, alert));
+        while (_history.Count > HistorySize) _history.RemoveLast();
+    }
 
     /// <summary>Called when the user clicks the bubble: swap it into the main pill.</summary>
     public void Pin(Activity activity)
@@ -63,7 +122,12 @@ public sealed class ActivityManager
 
     public void ShowAlert(IslandAlert alert)
     {
-        if (Quiet && !alert.BreaksThroughQuiet) return;
+        if (!Recording) _samples.Add(alert);
+        if (Quiet && !alert.BreaksThroughQuiet)
+        {
+            Remember(alert, missed: true);
+            return;
+        }
 
         // Showing the alert that's already up (a HUD whose view was updated) just restarts its timer.
         if (alert == CurrentAlert)
@@ -122,6 +186,7 @@ public sealed class ActivityManager
 
     private void Present(IslandAlert alert)
     {
+        Remember(alert, missed: false);
         CurrentAlert = alert;
         _alertRemaining = alert.Duration;
         _alertClock.Restart();

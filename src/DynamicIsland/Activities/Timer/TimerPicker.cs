@@ -18,7 +18,9 @@ public static class TimerPicker
     public static readonly Size PanelSize = new(420, 170);
     private static readonly int[] PresetMinutes = { 1, 3, 5, 10, 15, 25 };
 
-    public static FrameworkElement Build(Action<TimeSpan> startTimer, Action startFocus, Action startStopwatch, AddonSettings options)
+    /// <param name="recent">Builds the Recent tab (the latest alerts); <paramref name="startTab"/> 3 opens on it.</param>
+    public static FrameworkElement Build(Action<TimeSpan> startTimer, Action startFocus, Action startStopwatch, AddonSettings options,
+                                         Func<FrameworkElement> recent, int startTab = 0)
     {
         var root = new Grid { Margin = new Thickness(20, 14, 20, 16) };
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -29,16 +31,18 @@ public static class TimerPicker
             (L.T("Timer"), Icons.TimerGlyph, Ui.Orange, () => BuildTimer(startTimer)),
             (L.T("Focus"), "", Ui.Red, () => BuildFocus(startFocus, options)),
             (L.T("Stopwatch"), "", Ui.Amber, () => BuildStopwatch(startStopwatch)),
+            (L.T("Recent"), "", Ui.Blue, recent),
         };
+        var start = modes[Math.Clamp(startTab, 0, modes.Length - 1)];
 
         // Header: icon + title on the left, mode switch on the right.
         var header = new Grid();
-        var icon = Ui.Glyph(modes[0].Glyph, 15, modes[0].Color);
-        var title = Ui.Text(modes[0].Name, 15, FontWeights.SemiBold, Ui.Primary);
+        var icon = Ui.Glyph(start.Glyph, 15, start.Color);
+        var title = Ui.Text(start.Name, 15, FontWeights.SemiBold, Ui.Primary);
         title.Margin = new Thickness(8, 0, 0, 0);
         header.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { icon, title } });
 
-        var content = new ContentControl { Content = modes[0].View() };
+        var content = new ContentControl { Content = start.View() };
         Grid.SetRow(content, 1);
 
         var switcher = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
@@ -60,7 +64,7 @@ public static class TimerPicker
             tabs.Add(tab);
             switcher.Children.Add(tab);
         }
-        Select(tabs[0], true);
+        Select(tabs[Array.IndexOf(modes, start)], true);
         header.Children.Add(switcher);
 
         root.Children.Add(header);
@@ -96,7 +100,7 @@ public static class TimerPicker
         return grid;
     }
 
-    private static string Ordinal(int n) => L.IsDutch ? $"{n}e" : n % 100 is 11 or 12 or 13 ? $"{n}th" : (n % 10) switch { 1 => $"{n}st", 2 => $"{n}nd", 3 => $"{n}rd", _ => $"{n}th" };
+    private static string Ordinal(int n) => L.Ordinal(n);
 
     private static FrameworkElement BuildStopwatch(Action start)
     {

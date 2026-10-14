@@ -69,6 +69,7 @@ public sealed class AddonHost
         if (addon is null) return;
         var manager = _context.Manager;
         var quiet = manager.Quiet;
+        manager.Recording = false;
         manager.Quiet = false;
         try
         {
@@ -81,6 +82,7 @@ public sealed class AddonHost
         finally
         {
             manager.Quiet = quiet;
+            manager.Recording = true;
         }
     }
 

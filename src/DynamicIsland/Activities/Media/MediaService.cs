@@ -267,8 +267,21 @@ public sealed class MediaService
             g /= total;
             b /= total;
 
-            // Lift dark colours towards a readable brightness.
             var lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            if (Palette.Light)
+            {
+                // On the light island: darken light colours until they read on near-white (keeping the hue).
+                if (lum > 0.4)
+                {
+                    var scale = 0.4 / lum;
+                    r *= scale;
+                    g *= scale;
+                    b *= scale;
+                }
+                return Color.FromRgb((byte)(r * 255), (byte)(g * 255), (byte)(b * 255));
+            }
+
+            // Lift dark colours towards a readable brightness.
             if (lum < 0.55)
             {
                 var max = Math.Max(r, Math.Max(g, b));

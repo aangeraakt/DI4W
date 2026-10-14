@@ -51,7 +51,7 @@ public sealed class AppSettings
     /// <summary>Global shortcut that opens/closes the island's expanded view (keyboard and screen reader use).</summary>
     public string ExpandHotkey { get; set; } = "Ctrl+Alt+O";
 
-    /// <summary>Hidden with the shortcut or "Pause island"; remembered so it stays hidden after a restart.</summary>
+    /// <summary>Hidden with the shortcut or "Hide island"; remembered so it stays hidden after a restart.</summary>
     public bool Paused { get; set; }
 
     /// <summary>"" = Windows' language, "en" = English, "nl" = Dutch.</summary>
@@ -59,6 +59,17 @@ public sealed class AppSettings
 
     /// <summary>Which display: "" = main display, "Mouse" = the one with the mouse, or a device name (\\.\DISPLAY2).</summary>
     public string Monitor { get; set; } = "";
+
+    /// <summary>Which activity gets the pill when several run, most important first ("Timer", "Media"…).
+    /// Empty: the built-in order. See <see cref="ActivityKinds"/>.</summary>
+    public List<string> ActivityOrder { get; set; } = new();
+
+    /// <summary>The welcome tour has been shown. A fresh install starts with false (see <see cref="Load"/>);
+    /// settings files from before the tour existed read as true, so updating users don't get it.</summary>
+    public bool WelcomeShown { get; set; } = true;
+
+    /// <summary>After a crash, offer to report it on the next start.</summary>
+    public bool OfferCrashReports { get; set; } = true;
 
     /// <summary>Look for new releases on GitHub now and then and announce them in the island.</summary>
     public bool AutoCheckUpdates { get; set; } = true;
@@ -98,7 +109,7 @@ public sealed class AppSettings
                 Log.Error("Could not keep a copy of the broken settings", copyError);
             }
         }
-        var s = new AppSettings();
+        var s = new AppSettings { WelcomeShown = File.Exists(FilePath) }; // no file at all: a fresh install
         s.Save();
         return s;
     }
@@ -123,7 +134,7 @@ public sealed class AppSettings
 
         try
         {
-            var latest = File.Exists(FilePath) ? TryLoad() ?? Load() : new AppSettings();
+            var latest = File.Exists(FilePath) ? TryLoad() ?? Load() : new AppSettings { WelcomeShown = false };
             change(latest);
             latest.Save();
             return latest;
@@ -229,6 +240,65 @@ public sealed class AddonSettings
     // Developers
     /// <summary>Local API (127.0.0.1, same port as Claude Code) so scripts can show alerts and progress.</summary>
     public bool IslandApi { get; set; } = true;
+
+    /// <summary>Per add-on (keyed by its switch, e.g. "Clipboard"): when its pop-ups stay away.</summary>
+    public Dictionary<string, AddonQuiet> Quiet { get; set; } = new();
+}
+
+/// <summary>
+/// When one add-on's pop-ups stay away: during set hours (e.g. 22:00–08:00, across midnight) and/or while one of
+/// the listed apps is in front (process names like "obs64"). Held-back pop-ups still land in Recent.
+/// </summary>
+public sealed class AddonQuiet
+{
+    public bool HoursOn { get; set; }
+    public string From { get; set; } = "22:00";
+    public string To { get; set; } = "08:00";
+    public List<string> Apps { get; set; } = new();
+
+    public bool IsEmpty => !HoursOn && Apps.Count == 0;
+
+    /// <param name="foregroundApp">Process name of the app in front, without ".exe"; null if unknown.</param>
+    public bool IsQuiet(TimeSpan timeOfDay, string? foregroundApp)
+    {
+        if (foregroundApp is not null && Apps.Any(a => string.Equals(Normalize(a), foregroundApp, StringComparison.OrdinalIgnoreCase))) return true;
+        if (!HoursOn || !TimeSpan.TryParse(From, out var from) || !TimeSpan.TryParse(To, out var to) || from == to) return false;
+        return from < to
+            ? timeOfDay >= from && timeOfDay < to   // 13:00–14:00
+            : timeOfDay >= from || timeOfDay < to;  // 22:00–08:00, across midnight
+    }
+
+    /// <summary>"OBS64.exe" -> "OBS64".</summary>
+    public static string Normalize(string app) =>
+        app.Trim().EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? app.Trim()[..^4] : app.Trim();
+
+    public AddonQuiet Copy() => new() { HoursOn = HoursOn, From = From, To = To, Apps = Apps.ToList() };
+}
+
+/// <summary>The activities that can take the pill, in the built-in order (most important first).</summary>
+public static class ActivityKinds
+{
+    public static readonly (string Kind, string Label)[] All =
+    {
+        ("Focus", "Focus timer"),
+        ("Timer", "Timer"),
+        ("Stopwatch", "Stopwatch"),
+        ("Claude", "Claude Code"),
+        ("Downloads", "Downloads"),
+        ("Api", "Island API progress"),
+        ("FileCopy", "File copies"),
+        ("Media", "Music"),
+        ("Game", "Game mode"),
+    };
+
+    /// <summary>The saved order, completed with kinds it doesn't mention yet (in their built-in place at the end).</summary>
+    public static List<string> Ordered(IEnumerable<string> saved)
+    {
+        var known = All.Select(k => k.Kind).ToList();
+        var order = saved.Where(known.Contains).Distinct().ToList();
+        order.AddRange(known.Except(order));
+        return order;
+    }
 }
 
 /// <summary>

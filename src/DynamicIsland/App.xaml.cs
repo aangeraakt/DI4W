@@ -72,7 +72,11 @@ public partial class App : Application
             Log.Error("Unhandled UI exception", args.Exception);
             args.Handled = true;
         };
-        AppDomain.CurrentDomain.UnhandledException += (_, args) => Log.Error("Unhandled exception", args.ExceptionObject as Exception);
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            Log.Error("Unhandled exception", args.ExceptionObject as Exception);
+            if (args.IsTerminating) CrashReport.Write(args.ExceptionObject as Exception); // offered for reporting on the next start
+        };
         TaskScheduler.UnobservedTaskException += (_, args) =>
         {
             Log.Error("Unobserved task exception", args.Exception);
@@ -85,7 +89,6 @@ public partial class App : Application
                                                null, Timeout.Infinite, executeOnlyOnce: true);
 
         Log.Info($"Starting Dynamic Island {UpdateChecker.CurrentVersion}");
-        var firstRun = !File.Exists(AppSettings.FilePath);
         _settings = AppSettings.Load();
         L.Use(_settings.Language);
         // Before any view is built: the colors are read once.
@@ -97,7 +100,7 @@ public partial class App : Application
             _settings = AppSettings.Update(s => s.IslandPath = path);
         }
         Power.Start();
-        _manager = new ActivityManager();
+        _manager = new ActivityManager { Order = _settings.ActivityOrder };
 
         // Activities
         _timer = new TimerActivity(_manager, _settings);
@@ -136,9 +139,10 @@ public partial class App : Application
         WatchSettings();
         WatchWindowsTheme();
         ScheduleUpdateChecks();
+        OfferCrashReport();
 
-        // A fresh install: show the welcome tour in the settings app once the island is up.
-        if (firstRun) _ = Dispatcher.BeginInvoke(() => OpenSettings("--welcome"), DispatcherPriority.ApplicationIdle);
+        // A fresh install: show the welcome tour in the settings app once the island is up (the app marks it shown).
+        if (!_settings.WelcomeShown) _ = Dispatcher.BeginInvoke(() => OpenSettings("--welcome"), DispatcherPriority.ApplicationIdle);
 
         // Integrations
         // One local server for Claude Code hooks (/claude/...) and the Island API (/alert, /progress).
@@ -204,7 +208,16 @@ public partial class App : Application
         _island?.ClosePanel();
     }
 
-    private FrameworkElement BuildPicker() => TimerPicker.Build(StartTimer, StartFocus, StartStopwatch, _settings.Addons);
+    private FrameworkElement BuildPicker(int tab = 0) =>
+        TimerPicker.Build(StartTimer, StartFocus, StartStopwatch, _settings.Addons,
+                          () => RecentView.Build(_manager.History, () => _island?.ClosePanel()), tab);
+
+    /// <summary>The panel on its Recent tab (from the tray menu).</summary>
+    private void ShowRecent()
+    {
+        if (Paused) SetPaused(false);
+        _island?.OpenPanel(BuildPicker(tab: 3), TimerPicker.PanelSize);
+    }
 
     // ───────────────────────────── live settings ─────────────────────────────
 
@@ -252,6 +265,7 @@ public partial class App : Application
         if (updated.Paused != Paused) SetPaused(updated.Paused, save: false);
 
         _settings.CopyFrom(updated);
+        _manager.Order = _settings.ActivityOrder;
         _island?.ApplyScale();
         if (hotkeyChanged) _island?.RegisterHideHotkey(_settings.HideHotkey);
         if (expandHotkeyChanged) _island?.RegisterExpandHotkey(_settings.ExpandHotkey);
@@ -263,6 +277,49 @@ public partial class App : Application
             _restart = true;
             Shutdown();
         }
+    }
+
+    // ───────────────────────────── crash reports ─────────────────────────────
+
+    /// <summary>
+    /// The island crashed last time: say so, and offer the settings app's report form with the details filled in.
+    /// Only the user can send it (they see it all in the form first); ignoring the alert forgets the crash.
+    /// </summary>
+    private void OfferCrashReport()
+    {
+        if (CrashReport.Read() is null) return;
+        if (!_settings.OfferCrashReports)
+        {
+            CrashReport.Clear();
+            return;
+        }
+
+        var reporting = false;
+        var alert = new IslandAlert
+        {
+            Content = Ui.AlertView(Ui.GlyphCircle("", Ui.Orange, 46, 20), L.T("Dynamic Island closed unexpectedly"),
+                                   L.T("Click to report it. You see everything before anything is sent.")),
+            Size = new Size(420, 76),
+            Duration = TimeSpan.FromSeconds(10),
+            StickyUntilHover = true,
+            OnClick = () =>
+            {
+                reporting = true;
+                OpenSettings("--report-crash"); // the settings app clears the crash once it has read it
+            },
+            OnDismissed = () =>
+            {
+                if (!reporting) CrashReport.Clear();
+            },
+        };
+        // A little after startup, so it isn't lost among the first activities.
+        var delay = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+        delay.Tick += (_, _) =>
+        {
+            delay.Stop();
+            _manager.ShowAlert(alert);
+        };
+        delay.Start();
     }
 
     // ───────────────────────────── theme ─────────────────────────────
@@ -288,11 +345,11 @@ public partial class App : Application
     private void ApplyMenuTheme()
     {
         if (!Palette.Light) return;
-        var style = new Style(typeof(ContextMenu), (Style)Resources[typeof(ContextMenu)]);
-        style.Setters.Add(new Setter(Control.BackgroundProperty, Ui.Brush("#F9F9F9")));
-        style.Setters.Add(new Setter(Control.ForegroundProperty, Ui.Brush("#1C1C1E")));
-        style.Setters.Add(new Setter(Control.BorderBrushProperty, Ui.Brush("#D1D1D6")));
-        Resources[typeof(ContextMenu)] = style;
+        Resources["MenuBackground"] = Ui.Brush("#F9F9F9");
+        Resources["MenuForeground"] = Ui.Brush("#1C1C1E");
+        Resources["MenuSecondary"] = Ui.Brush("#6C6C70");
+        Resources["MenuBorder"] = Ui.Brush("#D1D1D6");
+        Resources["MenuHover"] = Ui.Brush("#E5E5EA");
     }
 
     // ───────────────────────────── previews from the settings app ─────────────────────────────
@@ -410,6 +467,7 @@ public partial class App : Application
         if (_timer.IsActive) menu.Items.Add(Item(L.T("Cancel timer"), _timer.Cancel, ""));
         menu.Items.Add(_focus.IsActive ? Item(L.T("Stop focus session"), _focus.Stop, "") : Item(L.T("Start focus session"), StartFocus, ""));
         menu.Items.Add(_stopwatch.IsActive ? Item(L.T("Stop stopwatch"), _stopwatch.Stop, "") : Item(L.T("Start stopwatch"), StartStopwatch, ""));
+        menu.Items.Add(Item(L.T("Recent alerts…"), ShowRecent, ""));
         menu.Items.Add(new Separator());
 
         menu.Items.Add(Item(L.T("Check for updates…"), () => OpenSettings("--page", "About"), ""));

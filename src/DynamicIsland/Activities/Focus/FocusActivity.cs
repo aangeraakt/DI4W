@@ -49,6 +49,7 @@ public sealed class FocusActivity : Activity
 
     public override string Name => L.T("Focus");
     public override int Priority => 32;
+    public override string Kind => "Focus";
     public override double CompactWidth => 230;
     public override Size ExpandedSize => new(400, 120);
 

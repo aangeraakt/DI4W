@@ -28,14 +28,8 @@ public sealed class ScreenshotAddon : Addon
     protected override bool IsEnabled(AddonSettings o) => o.Screenshots;
 
     /// <summary>The real pop-up shows the screenshot itself; the sample has a camera icon instead.</summary>
-    public override void Preview() => Show(new IslandAlert
-    {
-        Content = Ui.AlertView(Ui.GlyphCircle("", Ui.ButtonBg, 46, 20), L.T("Screenshot saved"),
-                               $"{L.T("Screenshot")} {DateTime.Now:yyyy-MM-dd HHmmss}.png",
-                               accessory: Ui.CircleButton(Ui.Glyph("", 15, Ui.Primary), Ui.ButtonBg, 36, () => { }, L.T("Show in folder"))),
-        Size = new Size(380, 76),
-        Duration = TimeSpan.FromSeconds(4),
-    });
+    public override void Preview() =>
+        ShowSaved(Ui.GlyphCircle("", Ui.ButtonBg, 46, 20), $"{L.T("Screenshot")} {DateTime.Now:yyyy-MM-dd HHmmss}.png", () => { }, null);
 
     protected override void Start()
     {
@@ -63,14 +57,22 @@ public sealed class ScreenshotAddon : Addon
         var thumbnail = await LoadThumbnail(path);
         if (thumbnail is null) return;
 
+        ShowSaved(Ui.Image(thumbnail, 46, 8), Path.GetFileName(path),
+                  () => Process.Start("explorer.exe", $"/select,\"{path}\""),
+                  () => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }));
+    }
+
+    /// <summary>The pop-up for a saved screenshot; the settings app's preview passes a camera icon and no actions.</summary>
+    private void ShowSaved(FrameworkElement picture, string name, Action showInFolder, Action? open)
+    {
         var folderButton = Ui.CircleButton(Ui.Glyph("", 15, Ui.Primary), Ui.ButtonBg, 36,
-                                           () => Process.Start("explorer.exe", $"/select,\"{path}\""), L.T("Show in folder"));
+                                           showInFolder, L.T("Show in folder"));
         Show(new IslandAlert
         {
-            Content = Ui.AlertView(Ui.Image(thumbnail, 46, 8), L.T("Screenshot saved"), Path.GetFileName(path), accessory: folderButton),
+            Content = Ui.AlertView(picture, L.T("Screenshot saved"), name, accessory: folderButton),
             Size = new Size(380, 76),
             Duration = TimeSpan.FromSeconds(4),
-            OnClick = () => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true }),
+            OnClick = open,
         });
     }
 

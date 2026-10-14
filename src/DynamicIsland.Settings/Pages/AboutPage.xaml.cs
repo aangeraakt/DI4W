@@ -19,6 +19,7 @@ public sealed partial class AboutPage : Page
         VersionCard.Description = L.F("Version {0}", UpdateChecker.CurrentVersion);
         SettingsFileCard.Description = AppSettings.FilePath;
         AutoCheck.IsOn = SettingsStore.Current.AutoCheckUpdates;
+        CrashOffers.IsOn = SettingsStore.Current.OfferCrashReports;
         UpdateStatus();
         _loading = false;
 
@@ -42,6 +43,76 @@ public sealed partial class AboutPage : Page
 
     private async void OnWelcome(object sender, RoutedEventArgs e) => await App.MainWindow!.ShowWelcomeAsync();
 
+    // ───────────────────────────── backup ─────────────────────────────
+
+    private async void OnExport(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+        {
+            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = $"Dynamic Island settings {DateTime.Now:yyyy-MM-dd}",
+        };
+        picker.FileTypeChoices.Add(L.T("Settings file"), new List<string> { ".json" });
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow!));
+        var file = await picker.PickSaveFileAsync();
+        if (file is null) return;
+        try
+        {
+            SettingsStore.Flush();
+            File.Copy(AppSettings.FilePath, file.Path, overwrite: true);
+            ShowBackup(InfoBarSeverity.Success, L.F("Saved to {0}", file.Path));
+        }
+        catch (Exception ex)
+        {
+            ShowBackup(InfoBarSeverity.Error, L.F("Couldn't save the file: {0}", ex.Message));
+        }
+    }
+
+    private async void OnImport(object sender, RoutedEventArgs e)
+    {
+        var picker = new Windows.Storage.Pickers.FileOpenPicker { SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary };
+        picker.FileTypeFilter.Add(".json");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow!));
+        var file = await picker.PickSingleFileAsync();
+        if (file is null) return;
+
+        AppSettings? imported;
+        try
+        {
+            var json = await File.ReadAllTextAsync(file.Path);
+            // Any JSON would read as "all defaults"; ours always has the add-ons section.
+            imported = json.Contains("\"Addons\"") ? System.Text.Json.JsonSerializer.Deserialize<AppSettings>(json) : null;
+        }
+        catch (Exception ex)
+        {
+            imported = null;
+            DynamicIsland.Core.Log.Info($"Settings import failed: {ex.Message}");
+        }
+        if (imported is null)
+        {
+            ShowBackup(InfoBarSeverity.Error, L.T("That isn't a Dynamic Island settings file."));
+            return;
+        }
+
+        SettingsStore.Flush();
+        AppSettings.Update(latest =>
+        {
+            // This PC's own facts stay: where the island is installed, and that the tour was seen.
+            var islandPath = latest.IslandPath;
+            latest.CopyFrom(imported);
+            latest.IslandPath = islandPath;
+            latest.WelcomeShown = true;
+        });
+        App.Restart("About"); // every page shows the imported values; the island picks them up by itself
+    }
+
+    private void ShowBackup(InfoBarSeverity severity, string message)
+    {
+        BackupBar.Severity = severity;
+        BackupBar.Message = message;
+        BackupBar.IsOpen = true;
+    }
+
     private void OnOpenSettingsFile(object sender, RoutedEventArgs e) => SettingsStore.Open(AppSettings.FilePath);
 
     private void OnOpenLogs(object sender, RoutedEventArgs e)
@@ -52,13 +123,18 @@ public sealed partial class AboutPage : Page
 
     // ───────────────────────────── report a problem ─────────────────────────────
 
-    private async void OnReport(object sender, RoutedEventArgs e)
+    private async void OnReport(object sender, RoutedEventArgs e) => await ReportAsync(null);
+
+    /// <summary>The report form; with <paramref name="crash"/> (from crash.txt) the crash details are filled in too.</summary>
+    public async Task ReportAsync(string? crash)
     {
         var title = new TextBox { Header = L.T("Title"), PlaceholderText = L.T("Short summary, e.g. \"Weather doesn't show\"") };
+        // In English: the issue is read by the developer. "Crash: System.NullReferenceException"
+        if (crash is not null) title.Text = "Crash: " + (crash.Split('\n').Skip(1).FirstOrDefault()?.Split(':')[0].Trim() ?? "");
         var body = new TextBox
         {
             Header = L.T("Report (you can change anything)"),
-            Text = ProblemReport.Build(),
+            Text = ProblemReport.Build(crash),
             AcceptsReturn = true,
             TextWrapping = TextWrapping.Wrap,
             Height = 320,
@@ -100,6 +176,11 @@ public sealed partial class AboutPage : Page
     }
 
     // ───────────────────────────── updates ─────────────────────────────
+
+    private void OnCrashOffers(object sender, RoutedEventArgs e)
+    {
+        if (!_loading) SettingsStore.Change(s => s.OfferCrashReports = CrashOffers.IsOn);
+    }
 
     private void OnAutoCheck(object sender, RoutedEventArgs e)
     {

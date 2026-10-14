@@ -7,7 +7,6 @@ public static partial class L
     {
         // ───────────── island: menu, timer, focus, stopwatch ─────────────
         ["Dynamic Island"] = "Dynamic Island",
-        ["Dynamic Island (hidden)"] = "Dynamic Island (verborgen)",
         ["Dynamic Island for Windows"] = "Dynamic Island voor Windows",
         ["Start timer"] = "Timer starten",
         ["{0} minutes"] = "{0} minuten",
@@ -17,8 +16,6 @@ public static partial class L
         ["Stop focus session"] = "Focussessie stoppen",
         ["Start stopwatch"] = "Stopwatch starten",
         ["Stop stopwatch"] = "Stopwatch stoppen",
-        ["Pause island"] = "Eiland pauzeren",
-        ["Settings…"] = "Instellingen…",
         ["Check for updates…"] = "Controleren op updates…",
         ["Quit"] = "Afsluiten",
         ["Update available"] = "Update beschikbaar",
@@ -249,7 +246,6 @@ public static partial class L
         ["Remove {0}"] = "{0} verwijderen",
 
         // ───────────── settings app: add-ons page ─────────────
-        ["Extra things the island can show. Changes apply right away."] = "Extra's die het eiland kan tonen. Wijzigingen gelden meteen.",
         ["System"] = "Systeem",
         ["Volume"] = "Volume",
         ["A bar in the island when you change the volume."] = "Een balk in het eiland als je het volume verandert.",
@@ -376,7 +372,6 @@ public static partial class L
         ["A preview of the text you copy shows up here"] = "Hier zie je een voorbeeld van de tekst die je kopieert",
         ["Screenshot"] = "Schermafbeelding",
         ["report"] = "rapport",
-        ["The island isn't running"] = "Het eiland is niet gestart",
         ["Start it to see previews."] = "Start het om voorbeelden te zien.",
         ["The island is hidden"] = "Het eiland is verborgen",
         ["Show it again to see the preview."] = "Toon het weer om het voorbeeld te zien.",
@@ -427,5 +422,49 @@ public static partial class L
             "Zet aan wat je wilt zien. Agenda en weer hebben een link of een plaats nodig, onder Add-ons.",
         ["Start Dynamic Island with Windows"] = "Dynamic Island starten met Windows",
         ["There's more under Add-ons, each with a Preview button."] = "Onder Add-ons vind je er meer, elk met een knop Voorbeeld.",
+
+        // ───────────── recent alerts ─────────────
+        ["Recent"] = "Recent",
+        ["Recent alerts…"] = "Recente meldingen…",
+        ["Nothing yet. Alerts show up here, also the ones that were held back."] = "Nog niets. Meldingen verschijnen hier, ook de meldingen die zijn tegengehouden.",
+        ["Held back (Do Not Disturb or quiet times)"] = "Tegengehouden (Niet storen of stille tijden)",
+
+        // ───────────── quiet times ─────────────
+        ["Quiet times"] = "Stille tijden",
+        ["Its pop-ups stay away then. You'll still find them under Recent in the island."] = "De meldingen blijven dan weg. Je vindt ze nog wel onder Recent in het eiland.",
+        ["Quiet between"] = "Stil tussen",
+        ["and"] = "en",
+        ["Also quiet while one of these apps is in front:"] = "Ook stil zolang een van deze apps vooraan staat:",
+        ["Add an open app"] = "Een geopende app toevoegen",
+        ["No other apps are open"] = "Er zijn geen andere apps geopend",
+
+        // ───────────── order ─────────────
+        ["Order"] = "Volgorde",
+        ["What gets the island first"] = "Wat het eiland als eerste krijgt",
+        ["When several things run at once, the top one gets the pill and the next one the small circle. Drag to change the order."] =
+            "Als er meerdere dingen tegelijk lopen, krijgt de bovenste het eiland en de volgende het kleine rondje. Sleep om de volgorde te wijzigen.",
+        ["Reset to the standard order"] = "Standaardvolgorde herstellen",
+        ["Island API progress"] = "Voortgang via de Island API",
+
+        // ───────────── backup ─────────────
+        ["Back up settings"] = "Back-up van instellingen",
+        ["Save all settings to a file, or load them on another PC: add-ons, shortcuts, apps, calendar links. The file contains your calendar links, so keep it private."] =
+            "Sla alle instellingen op in een bestand, of laad ze op een andere pc: add-ons, sneltoetsen, apps, agendalinks. Het bestand bevat je agendalinks, dus houd het privé.",
+        ["Export…"] = "Exporteren…",
+        ["Import…"] = "Importeren…",
+        ["Saved to {0}"] = "Opgeslagen in {0}",
+        ["Couldn't save the file: {0}"] = "Het bestand kon niet worden opgeslagen: {0}",
+        ["That isn't a Dynamic Island settings file."] = "Dat is geen instellingenbestand van Dynamic Island.",
+
+        // ───────────── crash reports ─────────────
+        ["Dynamic Island closed unexpectedly"] = "Dynamic Island is onverwacht gesloten",
+        ["Click to report it. You see everything before anything is sent."] = "Klik om het te melden. Je ziet alles voordat er iets wordt verstuurd.",
+        ["Offer to report crashes"] = "Aanbieden om crashes te melden",
+        ["If the island ever closes because of an error, it asks the next time it starts whether you want to report it. Nothing is sent unless you choose to."] =
+            "Als het eiland ooit door een fout sluit, vraagt het bij de volgende start of je dat wilt melden. Er wordt niets verstuurd tenzij je daarvoor kiest.",
+
+        // ───────────── languages (each in its own language) ─────────────
+        ["Deutsch"] = "Deutsch",
+        ["Français"] = "Français",
     };
 }
