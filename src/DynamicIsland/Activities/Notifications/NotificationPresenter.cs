@@ -71,11 +71,14 @@ public sealed partial class NotificationPresenter
         _manager.ShowAlert(alert);
     }
 
-    /// <summary>Call notifications from the supported apps, in English and Dutch.</summary>
+    /// <summary>Call notifications from the supported apps, in English, Dutch, German and French (apps write them in
+    /// the Windows language).</summary>
     internal static bool IsCall(IncomingNotification n) => CallPattern().IsMatch($"{n.Title} {n.Body}");
 
     [GeneratedRegex(@"incoming (voice |video |audio )?call|is calling|calling you|wants to (video )?call|ringing|" +
-                    @"inkomende? (spraak|video)?\s?(oproep|gesprek)|belt (je|u)|wil je bellen|video-?oproep|spraakoproep",
+                    @"inkomende? (spraak|video)?\s?(oproep|gesprek)|belt (je|u)|wil je bellen|video-?oproep|spraakoproep|" +
+                    @"eingehender (sprach|video)?\s?anruf|ruft (dich|sie) an|videoanruf|sprachanruf|" +
+                    @"appel (vocal |vidéo |video )?entrant|vous appelle|t'appelle|appel vidéo",
                     RegexOptions.IgnoreCase)]
     private static partial Regex CallPattern();
 

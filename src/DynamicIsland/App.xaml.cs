@@ -128,6 +128,11 @@ public partial class App : Application
         _island.Show();
         _island.HotkeyPressed += () => SetPaused(!Paused);
         _island.MessageReceived += OnWindowMessage;
+        // Shown again: an update found while it was hidden is announced now (after the window has caught up).
+        _island.IsVisibleChanged += (_, _) =>
+        {
+            if (_island.IsVisible) Dispatcher.BeginInvoke(AnnounceUpdate, DispatcherPriority.Background);
+        };
         _island.RegisterHideHotkey(_settings.HideHotkey);
         _island.RegisterExpandHotkey(_settings.ExpandHotkey);
 
@@ -388,22 +393,33 @@ public partial class App : Application
         {
             var update = await UpdateChecker.CheckAsync();
             if (update is null || update.Version == _announcedUpdate) return; // announce each version once per run
-            _announcedUpdate = update.Version;
             Log.Info($"Update available: {update.Version}");
-
-            _manager.ShowAlert(new IslandAlert
-            {
-                Content = Ui.AlertView(Ui.GlyphCircle(Icons.UpdateGlyph, Ui.Blue, 46, 20),
-                                       L.T("Update available"), L.F("Version {0} is ready. Click to install.", update.Version)),
-                Duration = TimeSpan.FromSeconds(8),
-                StickyUntilHover = true,
-                OnClick = () => OpenSettings("--page", "About"),
-            });
+            _pendingUpdate = update.Version;
+            AnnounceUpdate();
         }
         catch (Exception ex)
         {
             Log.Info($"Update check failed: {ex.Message}");
         }
+    }
+
+    private Version? _pendingUpdate;
+
+    /// <summary>"Update available", once per version. While the island is hidden it waits (it would only land in
+    /// Recent); showing the island announces it then.</summary>
+    private void AnnounceUpdate()
+    {
+        if (_pendingUpdate is not { } version || _manager.Suppressed) return;
+        _pendingUpdate = null;
+        _announcedUpdate = version;
+        _manager.ShowAlert(new IslandAlert
+        {
+            Content = Ui.AlertView(Ui.GlyphCircle(Icons.UpdateGlyph, Ui.Blue, 46, 20),
+                                   L.T("Update available"), L.F("Version {0} is ready. Click to install.", version)),
+            Duration = TimeSpan.FromSeconds(8),
+            StickyUntilHover = true,
+            OnClick = () => OpenSettings("--page", "About"),
+        });
     }
 
     // ───────────────────────────── tray + menu ─────────────────────────────

@@ -106,6 +106,59 @@ public class NewFeatureTests
         Assert.Equal(10, manager.History.Count);
     });
 
+    // ───────────── hidden island ─────────────
+
+    [Fact]
+    public void Showing_the_island_again_doesnt_replay_old_alerts() => AlertQueueTestsSta.Run(() =>
+    {
+        var manager = new ActivityManager();
+        IslandAlert Alert(string title, bool sticky = false) =>
+            new() { Content = new TextBlock { Text = title }, StickyUntilHover = sticky };
+
+        // A sticky alert holds the line; normally the rest waits behind it.
+        manager.ShowAlert(Alert("Claude needs you", sticky: true));
+        manager.ShowAlert(Alert("Waiting 1"));
+        manager.Suppressed = true; // hidden
+        manager.ShowAlert(Alert("While hidden"));
+        manager.Suppressed = false; // shown again
+
+        Assert.Null(manager.CurrentAlert); // nothing old pops up
+        Assert.Equal(new[] { "While hidden", "Waiting 1", "Claude needs you" }, manager.History.Select(h => h.Title));
+        Assert.True(manager.History.Take(2).All(h => h.Missed));
+    });
+
+    [Fact]
+    public void Alerts_that_waited_too_long_go_to_Recent() => AlertQueueTestsSta.Run(() =>
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0);
+        var manager = new ActivityManager { Clock = () => now };
+        IslandAlert Alert(string title, bool sticky = false) =>
+            new() { Content = new TextBlock { Text = title }, StickyUntilHover = sticky };
+
+        var needsYou = Alert("Claude needs you", sticky: true);
+        manager.ShowAlert(needsYou);
+        manager.ShowAlert(Alert("Old message"));
+        now = now.AddMinutes(10); // you were away
+        var fresh = Alert("Fresh message");
+        manager.ShowAlert(fresh);
+        manager.DismissAlert(needsYou);
+
+        Assert.Same(fresh, manager.CurrentAlert);
+        Assert.Contains(manager.History, h => h.Title == "Old message" && h.Missed);
+    });
+
+    [Fact]
+    public void A_ringing_timer_keeps_ringing_while_hidden() => AlertQueueTestsSta.Run(() =>
+    {
+        var manager = new ActivityManager();
+        var dismissed = false;
+        var alarm = new IslandAlert { Content = new TextBlock { Text = "Timer" }, Sticky = true, BreaksThroughQuiet = true, OnDismissed = () => dismissed = true };
+        manager.ShowAlert(alarm);
+        manager.Suppressed = true;
+        Assert.Same(alarm, manager.CurrentAlert);
+        Assert.False(dismissed);
+    });
+
     // ───────────── updates ─────────────
 
     [Fact]

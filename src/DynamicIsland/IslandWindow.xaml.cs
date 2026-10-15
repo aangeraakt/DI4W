@@ -146,6 +146,22 @@ public partial class IslandWindow : Window
         Power.Changed += ApplyPower;
         ApplyPower();
 
+        // Hidden (by the user, or for a fullscreen app): alerts go to Recent instead of piling up, and the island
+        // comes back collapsed; the mouse can't still be over it, so a hover that never got its "leave" is reset.
+        IsVisibleChanged += (_, _) =>
+        {
+            if (!IsVisible)
+            {
+                _hovering = false;
+                _expanded = false;
+                _collapseTimer.Stop();
+                _keyboardCollapse.Stop();
+                if (_panel is not null) ClosePanel();
+            }
+            _manager.Suppressed = !IsVisible;
+            Refresh();
+        };
+
         _manager.Changed += Refresh;
         Refresh();
 
@@ -227,6 +243,7 @@ public partial class IslandWindow : Window
     /// <summary>Opens the current activity (or the timer picker when idle), or closes it again.</summary>
     public void ToggleExpanded()
     {
+        if (!IsVisible) return; // hidden (paused, or a fullscreen app): it would open unseen and pop up open later
         if (_expanded || _panel is not null)
         {
             Collapse();

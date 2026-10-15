@@ -6,6 +6,15 @@ public sealed class ActivityManager
 {
     private readonly List<Activity> _activities = new();
     private readonly Queue<IslandAlert> _alerts = new();
+
+    /// <summary>When each waiting alert joined the line; one that waited too long is out of date (see PresentNext).</summary>
+    private readonly Dictionary<IslandAlert, DateTime> _queuedAt = new();
+
+    /// <summary>How long an alert may wait behind others (e.g. behind "Claude needs you" while you're away).</summary>
+    public static readonly TimeSpan MaxWait = TimeSpan.FromSeconds(30);
+
+    /// <summary>The time, replaceable in tests.</summary>
+    internal Func<DateTime> Clock { get; set; } = () => DateTime.UtcNow;
     private readonly DispatcherTimer _alertTimer;
     private TimeSpan _alertRemaining;
     private readonly System.Diagnostics.Stopwatch _alertClock = new();
@@ -98,15 +107,20 @@ public sealed class ActivityManager
     public bool Recording { get; set; } = true;
 
     /// <summary>An alert that was held back (an add-on's quiet times): only listed in Recent.</summary>
-    public void Miss(IslandAlert alert) => Remember(alert, missed: true);
+    public void Miss(IslandAlert alert)
+    {
+        Remember(alert, missed: true);
+        alert.OnDismissed?.Invoke();
+    }
 
     private void Remember(IslandAlert alert, bool missed)
     {
         // Volume and brightness bars are momentary feedback, not news.
         if (alert.Urgent || _samples.Contains(alert) || _history.Any(p => p.Source == alert)) return; // (or shown again after an interruption)
-        var texts = UI.ViewText.Texts(alert.Content);
+        // Title and subtitle; later texts are button labels ("Later", "Show in folder").
+        var texts = UI.ViewText.Texts(alert.Content).Where(t => t.Any(char.IsLetterOrDigit)).ToList(); // not the ☂ in an icon
         if (texts.Count == 0) return;
-        _history.AddFirst(new PastAlert(DateTime.Now, texts[0], string.Join(" · ", texts.Skip(1)), alert.OnClick, missed, alert));
+        _history.AddFirst(new PastAlert(DateTime.Now, texts[0], texts.Count > 1 ? texts[1] : "", alert.OnClick, missed, alert));
         while (_history.Count > HistorySize) _history.RemoveLast();
     }
 
@@ -120,12 +134,64 @@ public sealed class ActivityManager
     /// <summary>Do Not Disturb: only alerts with <see cref="IslandAlert.BreaksThroughQuiet"/> are shown.</summary>
     public bool Quiet { get; set; }
 
+    private bool _suppressed;
+
+    /// <summary>
+    /// The island is hidden (by the user, or for a fullscreen app). Alerts then go straight to Recent instead of
+    /// waiting in line: otherwise they'd all pop up one after another, long out of date, when it shows again.
+    /// Hiding also moves the current alert and the waiting ones to Recent.
+    /// </summary>
+    public bool Suppressed
+    {
+        get => _suppressed;
+        set
+        {
+            if (_suppressed == value) return;
+            _suppressed = value;
+            HoldAlert = false; // the mouse can't be over a hidden island
+            if (!value) return;
+
+            // Alarms (a finished timer) keep ringing until stopped, so they stay; the rest goes to Recent.
+            var dropped = _alerts.Where(a => !IsAlarm(a)).ToList();
+            var kept = _alerts.Where(IsAlarm).ToList();
+            var current = CurrentAlert;
+            if (current is not null && !IsAlarm(current)) dropped.Insert(0, current);
+            if (dropped.Count == 0) return;
+
+            _alerts.Clear();
+            _queuedAt.Clear();
+            foreach (var alarm in kept) _alerts.Enqueue(alarm);
+            if (current is not null && !IsAlarm(current))
+            {
+                CurrentAlert = null;
+                _alertTimer.Stop();
+            }
+            foreach (var alert in dropped)
+            {
+                Remember(alert, missed: true);
+                alert.OnDismissed?.Invoke();
+            }
+            if (CurrentAlert is null) PresentNext();
+            else Changed?.Invoke();
+        }
+    }
+
+    /// <summary>A ringing alarm (the timer): stays until it's stopped, even while the island is hidden.</summary>
+    private static bool IsAlarm(IslandAlert alert) => alert.Sticky && alert.BreaksThroughQuiet;
+
     public void ShowAlert(IslandAlert alert)
     {
         if (!Recording) _samples.Add(alert);
+        if (_suppressed && Recording && !IsAlarm(alert)) // previews ask for the island to be shown first
+        {
+            Remember(alert, missed: true);
+            alert.OnDismissed?.Invoke();
+            return;
+        }
         if (Quiet && !alert.BreaksThroughQuiet)
         {
             Remember(alert, missed: true);
+            alert.OnDismissed?.Invoke(); // it won't be shown: e.g. an Island API script waiting for the result hears "dismissed"
             return;
         }
 
@@ -147,13 +213,18 @@ public sealed class ActivityManager
             // Put the interrupted alert back at the front, unless it was a HUD itself (those are momentary).
             var waiting = _alerts.ToList();
             _alerts.Clear();
-            if (!CurrentAlert.Urgent) _alerts.Enqueue(CurrentAlert);
+            if (!CurrentAlert.Urgent)
+            {
+                _alerts.Enqueue(CurrentAlert);
+                _queuedAt[CurrentAlert] = Clock(); // interrupted, not out of date
+            }
             foreach (var a in waiting) _alerts.Enqueue(a);
             Present(alert);
         }
         else
         {
             _alerts.Enqueue(alert);
+            _queuedAt[alert] = Clock();
         }
     }
 
@@ -165,6 +236,7 @@ public sealed class ActivityManager
             var rest = _alerts.Where(a => a != specific).ToList();
             _alerts.Clear();
             foreach (var a in rest) _alerts.Enqueue(a);
+            _queuedAt.Remove(specific);
             specific.OnDismissed?.Invoke();
             return;
         }
@@ -173,15 +245,27 @@ public sealed class ActivityManager
         CurrentAlert = null;
         _alertTimer.Stop();
         old?.OnDismissed?.Invoke();
+        PresentNext();
+    }
 
-        if (_alerts.Count > 0)
+    /// <summary>The next waiting alert. Ones that waited longer than <see cref="MaxWait"/> are out of date: they go to
+    /// Recent instead of popping up one after another (alarms excepted, they're still ringing).</summary>
+    private void PresentNext()
+    {
+        while (_alerts.Count > 0)
         {
-            Present(_alerts.Dequeue());
+            var next = _alerts.Dequeue();
+            var queued = _queuedAt.Remove(next, out var at) ? at : Clock();
+            if (!IsAlarm(next) && Clock() - queued > MaxWait)
+            {
+                Remember(next, missed: true);
+                next.OnDismissed?.Invoke();
+                continue;
+            }
+            Present(next);
+            return;
         }
-        else
-        {
-            Changed?.Invoke();
-        }
+        Changed?.Invoke();
     }
 
     private void Present(IslandAlert alert)

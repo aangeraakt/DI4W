@@ -25,6 +25,9 @@ public sealed class NotificationService
     private DispatcherTimer? _poll;
     private bool _polling;
 
+    /// <summary>Notifications older than this never pop out of the island.</summary>
+    private static readonly TimeSpan MaxAge = TimeSpan.FromMinutes(2);
+
     public event Action<IncomingNotification>? Received;
 
     /// <summary>Human readable status for the tray menu ("Allowed", "Denied", error…).</summary>
@@ -75,6 +78,9 @@ public sealed class NotificationService
             {
                 ids.Add(n.Id);
                 if (!_seen.Add(n.Id)) continue;
+                // Old news, whatever the list says: Windows sometimes returns an empty list for a moment (after sleep,
+                // locking, or Explorer restarting), after which everything in Action Center would look new.
+                if (DateTimeOffset.Now - n.CreationTime > MaxAge) continue;
                 if (!_settings.NotificationsEnabled) continue;
                 var parsed = await Parse(n);
                 if (parsed is not null) Received?.Invoke(parsed);

@@ -20,7 +20,8 @@ public sealed class ClaudeActivity : Activity
 {
     private sealed record Session(string Id, string Project, DateTime Started);
 
-    private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(30);
+    // Long agentic turns run well past 30 minutes; only an Esc-cancelled turn (which never sends "stop") lingers this long.
+    private static readonly TimeSpan StaleAfter = TimeSpan.FromHours(2);
 
     private readonly ActivityManager _manager;
     private readonly AppSettings _settings;
