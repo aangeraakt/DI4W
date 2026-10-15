@@ -464,5 +464,22 @@ public static partial class L
         ["Offer to report crashes"] = "Anbieten, Abstürze zu melden",
         ["If the island ever closes because of an error, it asks the next time it starts whether you want to report it. Nothing is sent unless you choose to."] =
             "Falls die Insel wegen eines Fehlers beendet wird, fragt sie beim nächsten Start, ob du das melden möchtest. Es wird nichts gesendet, außer du entscheidest dich dafür.",
+
+        // ───────────── iPhone (Phone Link) ─────────────
+        ["iPhone"] = "iPhone",
+        ["Your iPhone's notifications and calls in the island, and its battery level. Uses Windows' Phone Link app, which links the iPhone over Bluetooth."] =
+            "Benachrichtigungen und Anrufe deines iPhone in der Insel, und sein Akkustand. Nutzt die Windows-App Smartphone-Link, die das iPhone per Bluetooth verbindet.",
+        ["Low iPhone battery warning at"] = "Warnung bei niedrigem iPhone-Akku ab",
+        ["1. Open Phone Link, choose iPhone and follow the steps (it pairs over Bluetooth).\n2. On the iPhone, under Settings → Bluetooth → your PC, turn on Show Notifications and Sync Contacts.\n3. To see only the island's pop-up, turn off banners for Phone Link in Windows Settings → System → Notifications."] =
+            "1. Öffne Smartphone-Link, wähle iPhone und folge den Schritten (die Kopplung läuft über Bluetooth).\n2. Schalte auf dem iPhone unter Einstellungen → Bluetooth → dein PC „Mitteilungen anzeigen“ und „Kontakte synchronisieren“ ein.\n3. Um nur das Pop-up der Insel zu sehen, schalte die Banner für Smartphone-Link in den Windows-Einstellungen → System → Benachrichtigungen aus.",
+        ["Open Phone Link"] = "Smartphone-Link öffnen",
+        ["Notification settings"] = "Benachrichtigungseinstellungen",
+        ["Link your iPhone"] = "iPhone verbinden",
+        ["On my way, see you in 10!"] = "Bin unterwegs, bis in 10 Minuten!",
+        ["Install Phone Link from the Microsoft Store, then link your iPhone in it."] = "Installiere Smartphone-Link aus dem Microsoft Store und verbinde dort dein iPhone.",
+        ["Open Phone Link and link your iPhone. Its notifications and calls then show up here."] = "Öffne Smartphone-Link und verbinde dein iPhone. Seine Benachrichtigungen und Anrufe erscheinen dann hier.",
+        ["{0} is linked · {1}% battery"] = "{0} ist verbunden · {1} % Akku",
+        ["{0} is linked"] = "{0} ist verbunden",
+        ["{0} battery is low"] = "Akku von {0} ist fast leer",
     };
 }

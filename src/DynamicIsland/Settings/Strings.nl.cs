@@ -466,5 +466,22 @@ public static partial class L
         // ───────────── languages (each in its own language) ─────────────
         ["Deutsch"] = "Deutsch",
         ["Français"] = "Français",
+
+        // ───────────── iPhone (Phone Link) ─────────────
+        ["iPhone"] = "iPhone",
+        ["Your iPhone's notifications and calls in the island, and its battery level. Uses Windows' Phone Link app, which links the iPhone over Bluetooth."] =
+            "De meldingen en oproepen van je iPhone in het eiland, en het batterijniveau. Gebruikt de app Phone Link van Windows, die de iPhone via Bluetooth koppelt.",
+        ["Low iPhone battery warning at"] = "Waarschuwing bij lage iPhone-batterij op",
+        ["1. Open Phone Link, choose iPhone and follow the steps (it pairs over Bluetooth).\n2. On the iPhone, under Settings → Bluetooth → your PC, turn on Show Notifications and Sync Contacts.\n3. To see only the island's pop-up, turn off banners for Phone Link in Windows Settings → System → Notifications."] =
+            "1. Open Phone Link, kies iPhone en volg de stappen (de koppeling gaat via Bluetooth).\n2. Zet op de iPhone onder Instellingen → Bluetooth → je pc Toon meldingen en Synchroniseer contacten aan.\n3. Wil je alleen de pop-up van het eiland zien, zet dan de banners voor Phone Link uit in Windows-instellingen → Systeem → Meldingen.",
+        ["Open Phone Link"] = "Phone Link openen",
+        ["Notification settings"] = "Meldingsinstellingen",
+        ["Link your iPhone"] = "Je iPhone koppelen",
+        ["On my way, see you in 10!"] = "Ik kom eraan, zie je over 10 minuten!",
+        ["Install Phone Link from the Microsoft Store, then link your iPhone in it."] = "Installeer Phone Link uit de Microsoft Store en koppel daarin je iPhone.",
+        ["Open Phone Link and link your iPhone. Its notifications and calls then show up here."] = "Open Phone Link en koppel je iPhone. De meldingen en oproepen verschijnen dan hier.",
+        ["{0} is linked · {1}% battery"] = "{0} is gekoppeld · {1}% batterij",
+        ["{0} is linked"] = "{0} is gekoppeld",
+        ["{0} battery is low"] = "Batterij van {0} raakt leeg",
     };
 }

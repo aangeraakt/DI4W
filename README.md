@@ -44,6 +44,7 @@ Each one has its own switch under **Settings → Add-ons** (calls and chat apps 
 | 🔊 **Volume** / ☀️ **Brightness** | An iOS-style bar when you change them (brightness: built-in laptop screens) |
 | 🔋 **Battery** | Charger plugged in or unplugged, and warnings at 20% and 10% (adjustable) |
 | 🎧 **Bluetooth** | "AirPods · Connected · 80% battery" when a paired device connects or disconnects |
+| 📱 **iPhone** | Your iPhone's notifications and calls (as the call card) through Windows' Phone Link, and its battery level with a low-battery warning. Link the iPhone in Phone Link first; nothing to install on the iPhone |
 | 💾 **USB drives** | A drive plugged in or removed, with its name and size; click to open it |
 | 📶 **Wi-Fi and internet** | No internet, back online, or which network you joined |
 | 🟠 **Microphone and camera** | An orange or green dot next to the island while an app uses them |

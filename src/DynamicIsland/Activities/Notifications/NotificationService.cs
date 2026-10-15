@@ -8,7 +8,8 @@ using Windows.UI.Notifications.Management;
 
 namespace DynamicIsland.Activities.Notifications;
 
-public sealed record IncomingNotification(string App, string Title, string Body, BitmapSource? Logo);
+/// <param name="App">The app it came from; for an iPhone notification the iPhone app (or "iPhone" if unknown).</param>
+public sealed record IncomingNotification(string App, string Title, string Body, BitmapSource? Logo, bool FromIPhone = false);
 
 /// <summary>
 /// Watches Windows toast notifications (Action Center) and raises the ones from allow-listed
@@ -110,14 +111,33 @@ public sealed class NotificationService
             return null;
         }
 
-        if (!_settings.NotificationApps.Any(a => app.Contains(a, StringComparison.OrdinalIgnoreCase))) return null;
+        // Phone Link (an iPhone's notifications and calls) is recognized by its app id: its name differs per language.
+        var fromIPhone = _settings.Addons.IPhone && PhoneLink.IsPhoneLink(AppId(n));
+        if (!fromIPhone && !_settings.NotificationApps.Any(a => app.Contains(a, StringComparison.OrdinalIgnoreCase))) return null;
 
         var binding = n.Notification?.Visual?.GetBinding(KnownNotificationBindings.ToastGeneric);
         var texts = binding?.GetTextElements().Select(t => t.Text).Where(t => !string.IsNullOrWhiteSpace(t)).ToList() ?? new();
+        if (fromIPhone)
+        {
+            var phone = PhoneLink.Describe(texts);
+            return new IncomingNotification(phone.App ?? "iPhone", phone.Title, phone.Body, null, FromIPhone: true);
+        }
+
         var title = texts.Count > 0 ? texts[0] : app;
         var body = string.Join(" ", texts.Skip(1));
-
         return new IncomingNotification(app, title, body, await Logo(n, app));
+    }
+
+    private static string? AppId(UserNotification n)
+    {
+        try
+        {
+            return n.AppInfo.AppUserModelId;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private async Task<BitmapSource?> Logo(UserNotification n, string app)

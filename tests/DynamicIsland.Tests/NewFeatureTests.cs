@@ -159,6 +159,29 @@ public class NewFeatureTests
         Assert.False(dismissed);
     });
 
+    // ───────────── iPhone through Phone Link ─────────────
+
+    [Fact]
+    public void Phone_Link_is_recognized_by_its_app_id()
+    {
+        Assert.True(DynamicIsland.Activities.Notifications.PhoneLink.IsPhoneLink("Microsoft.YourPhone_8wekyb3d8bbwe!App"));
+        Assert.False(DynamicIsland.Activities.Notifications.PhoneLink.IsPhoneLink("Discord"));
+        Assert.False(DynamicIsland.Activities.Notifications.PhoneLink.IsPhoneLink(null));
+    }
+
+    [Fact]
+    public void iPhone_notifications_are_split_into_app_sender_and_message()
+    {
+        var p = DynamicIsland.Activities.Notifications.PhoneLink.Describe(new[] { "WhatsApp", "Sam", "On my", "way" });
+        Assert.Equal("WhatsApp", p.App);
+        Assert.Equal("Sam", p.Title);
+        Assert.Equal("On my way", p.Body);
+
+        var unknown = DynamicIsland.Activities.Notifications.PhoneLink.Describe(new[] { "Sam", "Hi" });
+        Assert.Null(unknown.App);
+        Assert.Equal("Sam", unknown.Title);
+    }
+
     // ───────────── updates ─────────────
 
     [Fact]

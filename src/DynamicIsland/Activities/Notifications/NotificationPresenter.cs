@@ -25,6 +25,12 @@ public sealed partial class NotificationPresenter
 
     public void Show(IncomingNotification n)
     {
+        if (n.FromIPhone)
+        {
+            ShowFromIPhone(n);
+            return;
+        }
+
         var preset = ChatApps.Find(n.App);
         var color = preset is null ? Ui.DiscordBlurple : Ui.Brush(preset.Color);
         FrameworkElement icon = n.Logo is not null ? Ui.Image(n.Logo, 46, 12) : Ui.GlyphCircle(Icons.ChatGlyph, color, 46, 20);
@@ -43,6 +49,31 @@ public sealed partial class NotificationPresenter
             Size = new Size(400, string.IsNullOrEmpty(n.Body) || n.Body.Length < 40 ? 76 : 88),
             Duration = TimeSpan.FromSeconds(5),
             OnClick = Open,
+        });
+    }
+
+    /// <summary>An iPhone notification through Phone Link: the iPhone app's color and a phone icon, "iPhone · app"
+    /// under the message; calls get the call card, whose answer button brings Phone Link forward to take it.</summary>
+    private void ShowFromIPhone(IncomingNotification n)
+    {
+        var color = PhoneLink.ColorFor(n.App) is { } hex ? Ui.Brush(hex) : Ui.ButtonBg;
+        var icon = Ui.GlyphCircle("", color, 46, 20); // cell phone
+        if (_settings.Addons.Calls && IsCall(n))
+        {
+            ShowCall(n, "iPhone", icon, PhoneLink.Open);
+            return;
+        }
+
+        var source = n.App == "iPhone" ? "iPhone" : $"iPhone · {n.App}";
+        var subtitle = string.IsNullOrWhiteSpace(n.Body) ? source : $"{n.Body}";
+        var view = Ui.AlertView(icon, n.Title, subtitle,
+                                accessory: string.IsNullOrWhiteSpace(n.Body) ? null : Ui.Text(source, 11.5, FontWeights.Medium, Ui.Grey));
+        _manager.ShowAlert(new IslandAlert
+        {
+            Content = view,
+            Size = new Size(420, string.IsNullOrEmpty(n.Body) || n.Body.Length < 40 ? 76 : 88),
+            Duration = TimeSpan.FromSeconds(5),
+            OnClick = PhoneLink.Open,
         });
     }
 

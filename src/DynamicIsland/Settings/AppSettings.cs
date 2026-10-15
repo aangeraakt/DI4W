@@ -223,6 +223,10 @@ public sealed class AddonSettings
 
     // Apps and alerts
     public bool Calls { get; set; } = true;
+
+    /// <summary>iPhone through Windows' Phone Link: its notifications and calls in the island, and its battery (Bluetooth).</summary>
+    public bool IPhone { get; set; } = true;
+    public int IPhoneBatteryLowPercent { get; set; } = 20;
     public bool DoNotDisturb { get; set; } = true;
     public bool WindowsUpdate { get; set; } = true;
 

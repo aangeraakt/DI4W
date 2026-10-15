@@ -464,5 +464,22 @@ public static partial class L
         ["Offer to report crashes"] = "Proposer de signaler les plantages",
         ["If the island ever closes because of an error, it asks the next time it starts whether you want to report it. Nothing is sent unless you choose to."] =
             "Si l'île se ferme à cause d'une erreur, elle vous demande au prochain démarrage si vous voulez le signaler. Rien n'est envoyé sans votre accord.",
+
+        // ───────────── iPhone (Phone Link) ─────────────
+        ["iPhone"] = "iPhone",
+        ["Your iPhone's notifications and calls in the island, and its battery level. Uses Windows' Phone Link app, which links the iPhone over Bluetooth."] =
+            "Les notifications et appels de votre iPhone dans l'île, et son niveau de batterie. Utilise l'application Mobile connecté de Windows, qui relie l'iPhone en Bluetooth.",
+        ["Low iPhone battery warning at"] = "Alerte de batterie faible de l'iPhone à",
+        ["1. Open Phone Link, choose iPhone and follow the steps (it pairs over Bluetooth).\n2. On the iPhone, under Settings → Bluetooth → your PC, turn on Show Notifications and Sync Contacts.\n3. To see only the island's pop-up, turn off banners for Phone Link in Windows Settings → System → Notifications."] =
+            "1. Ouvrez Mobile connecté, choisissez iPhone et suivez les étapes (le jumelage se fait en Bluetooth).\n2. Sur l'iPhone, dans Réglages → Bluetooth → votre PC, activez Afficher les notifications et Synchroniser les contacts.\n3. Pour ne voir que la fenêtre de l'île, désactivez les bannières de Mobile connecté dans Paramètres Windows → Système → Notifications.",
+        ["Open Phone Link"] = "Ouvrir Mobile connecté",
+        ["Notification settings"] = "Paramètres de notification",
+        ["Link your iPhone"] = "Relier votre iPhone",
+        ["On my way, see you in 10!"] = "J'arrive, à dans 10 minutes !",
+        ["Install Phone Link from the Microsoft Store, then link your iPhone in it."] = "Installez Mobile connecté depuis le Microsoft Store, puis reliez-y votre iPhone.",
+        ["Open Phone Link and link your iPhone. Its notifications and calls then show up here."] = "Ouvrez Mobile connecté et reliez votre iPhone. Ses notifications et appels s'afficheront ici.",
+        ["{0} is linked · {1}% battery"] = "{0} est relié · batterie {1} %",
+        ["{0} is linked"] = "{0} est relié",
+        ["{0} battery is low"] = "La batterie de {0} est faible",
     };
 }

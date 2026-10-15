@@ -15,7 +15,6 @@ public sealed class BluetoothAddon : Addon
     private const string IsPaired = "System.Devices.Aep.IsPaired";
     private const string Category = "System.Devices.Aep.Category";
     private const string ContainerId = "System.Devices.Aep.ContainerId";
-    private const string BatteryKey = "{104EA319-6EE2-4701-BD47-8DDBF425BBE5} 2"; // battery % for hands-free headsets
 
     // Classic Bluetooth and Bluetooth LE association endpoints.
     private const string Selector =
@@ -94,7 +93,7 @@ public sealed class BluetoothAddon : Addon
 
     private async Task Announce(string id, Device device, bool connected)
     {
-        int? battery = connected ? await ReadBattery(id, device) : null;
+        int? battery = connected ? await BluetoothBattery.ReadAsync(id, device.Container, device.LowEnergy, device.Name) : null;
         var subtitle = connected ? battery is { } b ? L.F("Connected · {0}% battery", b) : L.T("Connected") : L.T("Disconnected");
         var icon = Ui.GlyphCircle(GlyphFor(device), connected ? Ui.Blue : Ui.ButtonBg, 46, 20);
         Show(new IslandAlert
@@ -117,50 +116,6 @@ public sealed class BluetoothAddon : Addon
         return "";
     }
 
-    /// <summary>Best effort: headsets publish it as a device property, LE devices through the GATT battery service.</summary>
-    private static async Task<int?> ReadBattery(string id, Device device)
-    {
-        try
-        {
-            if (device.Container is { } container)
-            {
-                var nodes = await DeviceInformation.FindAllAsync(
-                    $"System.Devices.ContainerId:=\"{{{container}}}\"", new[] { BatteryKey }, DeviceInformationKind.Device);
-                foreach (var node in nodes)
-                {
-                    if (node.Properties.TryGetValue(BatteryKey, out var v) && v is byte level) return level;
-                }
-            }
-
-            if (device.LowEnergy)
-            {
-                using var le = await BluetoothLEDevice.FromIdAsync(id);
-                if (le is null) return null;
-                var services = await le.GetGattServicesForUuidAsync(GattServiceUuids.Battery, BluetoothCacheMode.Cached);
-                foreach (var service in services.Services)
-                {
-                    using (service)
-                    {
-                        var chars = await service.GetCharacteristicsForUuidAsync(GattCharacteristicUuids.BatteryLevel, BluetoothCacheMode.Cached);
-                        foreach (var ch in chars.Characteristics)
-                        {
-                            var read = await ch.ReadValueAsync(BluetoothCacheMode.Uncached);
-                            if (read.Status == GattCommunicationStatus.Success && read.Value.Length > 0)
-                            {
-                                using var reader = Windows.Storage.Streams.DataReader.FromBuffer(read.Value);
-                                return reader.ReadByte();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Info($"No Bluetooth battery level for {device.Name}: {ex.Message}");
-        }
-        return null;
-    }
 
     private static T? Get<T>(IReadOnlyDictionary<string, object> props, string key) =>
         props.TryGetValue(key, out var v) && v is T t ? t : default;

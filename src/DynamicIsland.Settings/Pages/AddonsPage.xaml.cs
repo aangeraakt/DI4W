@@ -23,6 +23,10 @@ public sealed partial class AddonsPage : Page
                  Number(L.T("Low battery warning at"), nameof(AddonSettings.BatteryLowPercent), 5, 50, L.T("%")),
                  Number(L.T("Very low battery warning at"), nameof(AddonSettings.BatteryCriticalPercent), 1, 30, L.T("%")));
         Toggle(nameof(AddonSettings.Bluetooth), L.T("Bluetooth devices"), L.T("Headphones, mice and controllers connecting or disconnecting, with their battery level when available."), "");
+        Expander(nameof(AddonSettings.IPhone), L.T("iPhone"),
+                 L.T("Your iPhone's notifications and calls in the island, and its battery level. Uses Windows' Phone Link app, which links the iPhone over Bluetooth."), "",
+                 IPhoneSetup(),
+                 Number(L.T("Low iPhone battery warning at"), nameof(AddonSettings.IPhoneBatteryLowPercent), 11, 50, L.T("%")));
         Toggle(nameof(AddonSettings.UsbDrives), L.T("USB drives"), L.T("USB sticks and external drives plugged in or removed. Click the pop-up to open the drive."), "");
         Toggle(nameof(AddonSettings.Network), L.T("Wi-Fi and internet"), L.T("When the internet drops or comes back, and which network you joined."), "");
         Toggle(nameof(AddonSettings.PrivacyIndicators), L.T("Microphone and camera in use"), L.T("An orange (microphone) or green (camera) dot next to the island while an app uses them."), "");
@@ -196,6 +200,32 @@ public sealed partial class AddonsPage : Page
         return new StackPanel { Orientation = Orientation.Horizontal, Children = { PreviewButton(property), toggle } };
     }
 
+    /// <summary>How to link the iPhone, with a button that opens Phone Link.</summary>
+    private static SettingsCard IPhoneSetup()
+    {
+        var steps = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            Text = L.T("1. Open Phone Link, choose iPhone and follow the steps (it pairs over Bluetooth).\n2. On the iPhone, under Settings → Bluetooth → your PC, turn on Show Notifications and Sync Contacts.\n3. To see only the island's pop-up, turn off banners for Phone Link in Windows Settings → System → Notifications."),
+        };
+        var open = new Button { Content = L.T("Open Phone Link"), Style = (Style)Application.Current.Resources["AccentButtonStyle"] };
+        open.Click += (_, _) => SettingsStore.Open(@"shell:AppsFolder\Microsoft.YourPhone_8wekyb3d8bbwe!App");
+        var notifications = new HyperlinkButton { Content = L.T("Notification settings") };
+        notifications.Click += (_, _) => SettingsStore.Open("ms-settings:notifications");
+        return new SettingsCard
+        {
+            Header = L.T("Link your iPhone"),
+            ContentAlignment = ContentAlignment.Vertical,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = new StackPanel
+            {
+                Spacing = 10,
+                Children = { steps, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { open, notifications } } },
+            },
+        };
+    }
+
     private static SettingsCard ApiExample()
     {
         var port = SettingsStore.Current.ClaudePort;
@@ -268,6 +298,7 @@ public sealed partial class AddonsPage : Page
     private static readonly HashSet<string> NoQuiet = new()
     {
         nameof(AddonSettings.DoNotDisturb), nameof(AddonSettings.GameMode), nameof(AddonSettings.IslandApi),
+        nameof(AddonSettings.IPhone), // its notifications come through Phone Link, which has its own settings
     };
 
     private static AddonQuiet QuietOf(string key) =>

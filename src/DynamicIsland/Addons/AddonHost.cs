@@ -27,6 +27,7 @@ public sealed class AddonHost
             new BrightnessAddon(context),
             new BatteryAddon(context),
             new BluetoothAddon(context),
+            new IPhoneAddon(context),
             new UsbDriveAddon(context),
             new NetworkAddon(context),
             new PrivacyAddon(context),
